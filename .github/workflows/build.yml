@@ -53,6 +53,10 @@ jobs:
           git apply --binary --stat ../wine/winlator-custom-wine11.patch
           git apply --binary ../wine/winlator-custom-wine11.patch
           echo "补丁应用成功"
+          # 关键: 删除 .git, 避免 Wine 构建系统 (configure/make_makefiles) 用
+          # git ls-files 重新生成 Makefile.in, 从而引用补丁中已删除的文件
+          # (如 comctl32 的 .svg 图标, Winlator 补丁将其替换为 .bmp)
+          cd .. && rm -rf wine-src/.git
 
       - name: 构建 Wine 11
         if: steps.wine-cache.outputs.cache-hit != 'true'
