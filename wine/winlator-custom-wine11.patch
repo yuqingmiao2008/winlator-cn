@@ -21801,22 +21801,6 @@ index feae709ae2a46c8836690afbc4cff2c5e40f97d4..42bd2e5cefcd0afc36fa7a2a0b770894
      /* Also works for posted messages, but the situation is a bit different,
       * because both messages are in the same queue. */
  
-diff --git a/dlls/win32u/main.c b/dlls/win32u/main.c
-index 22e5368b132b71320c163d2f1fc75ac59ddbdd78..50f83090c168cde883b04da1673b2b4db862b058 100644
---- a/dlls/win32u/main.c
-+++ b/dlls/win32u/main.c
-@@ -2110,11 +2110,6 @@ BOOL SYSCALL_API NtUserRegisterTouchPadCapable( BOOL capable )
-     SYSCALL_FUNC( NtUserRegisterTouchPadCapable );
- }
- 
--ATOM SYSCALL_API NtUserRegisterWindowMessage( UNICODE_STRING *name )
--{
--    SYSCALL_FUNC( NtUserRegisterWindowMessage );
--}
--
- BOOL SYSCALL_API NtUserReleaseCapture(void)
- {
-     SYSCALL_FUNC( NtUserReleaseCapture );
 diff --git a/dlls/win32u/menu.c b/dlls/win32u/menu.c
 index a700f44af78befb59cad46b20c3d6d175d344b3f..002c97deadd6db9faae8846e36eef8493a89e9b6 100644
 --- a/dlls/win32u/menu.c
