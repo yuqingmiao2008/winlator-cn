@@ -11119,7 +11119,7 @@ index 170bdba66..f1d55cc3e 100644
                                            void *key_data, UINT key_size, void *rw_data, UINT rw_size,
                                            void *dynamic_data, UINT dynamic_size, void *static_data, UINT static_size,
 diff --git a/dlls/ntdll/unix/env.c b/dlls/ntdll/unix/env.c
-index 460888b95..3c8d601f8 100644
+index 460888b95..9b667ceb3 100644
 --- a/dlls/ntdll/unix/env.c
 +++ b/dlls/ntdll/unix/env.c
 @@ -1029,6 +1029,7 @@ static void add_system_dll_path_var( WCHAR **env, SIZE_T *pos, SIZE_T *size )
@@ -11145,11 +11145,10 @@ index 460888b95..3c8d601f8 100644
  }
  
  
-@@ -1645,6 +1654,16 @@ static void copy_dos_path_string( WCHAR **src, WCHAR **dst, UNICODE_STRING *str,
-         copy_unicode_string( src, dst, str, len );
-         ptr[1] = '\\'; /* change \??\ to \\?\ */
+@@ -1647,6 +1656,16 @@ static void copy_dos_path_string( WCHAR **src, WCHAR **dst, UNICODE_STRING *str,
      }
-+
+ }
+ 
 +static inline void append_unicode_string( WCHAR *src, WCHAR **dst, UNICODE_STRING *str )
 +{
 +    UINT len = wcslen(src) * sizeof(WCHAR);
@@ -11158,10 +11157,11 @@ index 460888b95..3c8d601f8 100644
 +    memcpy( *dst, src, len );
 +    (*dst)[len / sizeof(WCHAR)] = 0;
 +    *dst += len / sizeof(WCHAR) + 1;
++}
 +
- }
- 
  static inline WCHAR *get_dos_path( WCHAR *nt_path )
+ {
+     if (nt_path[4] && nt_path[5] == ':') return nt_path + 4; /* skip the \??\ prefix */
 @@ -2009,10 +2028,11 @@ static RTL_USER_PROCESS_PARAMETERS *build_initial_params( void **module )
   */
  void init_startup_info(void)
