@@ -1,0 +1,16 @@
+# 构建产物
+dist/
+*.apk
+wine-src/
+wine-staging/
+
+# IDE
+.idea/
+*.iml
+.gradle/
+build/
+local.properties
+
+# 临时
+*.log
+*.tzst.new
