@@ -1,5 +1,5 @@
 diff --git a/configure.ac b/configure.ac
-index ee0b1c483..90cb4b755 100644
+index ee0b1c483d47bad175007f1dd615de7e927058d9..90cb4b755f47bcc111a95484419494c5e3fde855 100644
 --- a/configure.ac
 +++ b/configure.ac
 @@ -774,6 +774,7 @@ AC_CHECK_HEADERS(\
@@ -39,7 +39,7 @@ index ee0b1c483..90cb4b755 100644
                  AC_LINK_IFELSE([AC_LANG_PROGRAM(
  [[#include <sched.h>]], [[sched_setaffinity(0, 0, 0);]])],[wine_cv_have_sched_setaffinity=yes],[wine_cv_have_sched_setaffinity=no]))
 diff --git a/dlls/appwiz.cpl/addons.c b/dlls/appwiz.cpl/addons.c
-index f0835e90e..966cfffb0 100644
+index f0835e90ed5a4e8cf73097ffde035d8d65accaf6..966cfffb053a02f921bde148180afd8107638952 100644
 --- a/dlls/appwiz.cpl/addons.c
 +++ b/dlls/appwiz.cpl/addons.c
 @@ -247,6 +247,21 @@ static HKEY open_config_key(void)
@@ -120,7 +120,7 @@ index f0835e90e..966cfffb0 100644
  found:
      if (returned_size > sizeof(httpW) && !memcmp(url, httpW, sizeof(httpW))) append_url_params( url );
 diff --git a/dlls/comctl32/Makefile.in b/dlls/comctl32/Makefile.in
-index b3566bc01..47f19062d 100644
+index b3566bc011c69bfc7c8c548ce0760a23b1dbbcf7..47f19062dfc3f7c3160fc4baf60cc5577ed66525 100644
 --- a/dlls/comctl32/Makefile.in
 +++ b/dlls/comctl32/Makefile.in
 @@ -19,16 +19,6 @@ SOURCES = \
@@ -141,7 +141,7 @@ index b3566bc01..47f19062d 100644
  	ipaddress.c \
  	listview.c \
 diff --git a/dlls/comctl32/comctl32.rc b/dlls/comctl32/comctl32.rc
-index 97e3e4895..3ced74566 100644
+index 97e3e4895ce64ad306806e278e615c5916bee0dd..3ced7456684ead9606b353fee07ca6ba7d35ae83 100644
 --- a/dlls/comctl32/comctl32.rc
 +++ b/dlls/comctl32/comctl32.rc
 @@ -117,20 +117,20 @@ IDT_CHECK BITMAP idt_check.bmp
@@ -261,7 +261,7 @@ HI|Ba(0sWkd
 
 diff --git a/dlls/comctl32/idb_hist_large.svg b/dlls/comctl32/idb_hist_large.svg
 deleted file mode 100644
-index a811fbcaa..000000000
+index a811fbcaa5d3260f04d28e02c50f795b1e8423ab..0000000000000000000000000000000000000000
 --- a/dlls/comctl32/idb_hist_large.svg
 +++ /dev/null
 @@ -1,55 +0,0 @@
@@ -322,7 +322,7 @@ index a811fbcaa..000000000
 -</svg>
 diff --git a/dlls/comctl32/idb_hist_small.svg b/dlls/comctl32/idb_hist_small.svg
 deleted file mode 100644
-index 3fceec0da..000000000
+index 3fceec0da6eb7e8a029b529eedfb44b4ca24a08c..0000000000000000000000000000000000000000
 --- a/dlls/comctl32/idb_hist_small.svg
 +++ /dev/null
 @@ -1,254 +0,0 @@
@@ -830,7 +830,7 @@ p@jKoz@a+(F>|HeMbN?lSM~mY>;y+s8j~4i&1^#G(|NmOx{{Ra|kAwgK
 
 diff --git a/dlls/comctl32/idb_std_large.svg b/dlls/comctl32/idb_std_large.svg
 deleted file mode 100644
-index 1533c9e40..000000000
+index 1533c9e40036325cbbcd2da4140ebef6d4bf4063..0000000000000000000000000000000000000000
 --- a/dlls/comctl32/idb_std_large.svg
 +++ /dev/null
 @@ -1,1016 +0,0 @@
@@ -1852,7 +1852,7 @@ index 1533c9e40..000000000
 -</svg>
 diff --git a/dlls/comctl32/idb_std_small.svg b/dlls/comctl32/idb_std_small.svg
 deleted file mode 100644
-index 0341cd188..000000000
+index 0341cd1886a88574fc7a21810c7f91571fc01830..0000000000000000000000000000000000000000
 --- a/dlls/comctl32/idb_std_small.svg
 +++ /dev/null
 @@ -1,45 +0,0 @@
@@ -2026,7 +2026,7 @@ m3d?+3ZSq1qVObkYejg#8uuQh9cv4lpRD8bui~Juu0{;Z%Ao4H(
 
 diff --git a/dlls/comctl32/idb_view_large.svg b/dlls/comctl32/idb_view_large.svg
 deleted file mode 100644
-index edbc30244..000000000
+index edbc3024472fe54b28fcc1c7d47eb5f20c072a91..0000000000000000000000000000000000000000
 --- a/dlls/comctl32/idb_view_large.svg
 +++ /dev/null
 @@ -1,289 +0,0 @@
@@ -2441,7 +2441,7 @@ ZzuM))PXllan1a>?1W%t0{+6Eq{{gt(ubKb=
 
 diff --git a/dlls/comctl32/idb_view_small.svg b/dlls/comctl32/idb_view_small.svg
 deleted file mode 100644
-index 7bb2c727a..000000000
+index 7bb2c727a2bfa61e0a1289d0f94805e3a7d9dd62..0000000000000000000000000000000000000000
 --- a/dlls/comctl32/idb_view_small.svg
 +++ /dev/null
 @@ -1,180 +0,0 @@
@@ -2627,7 +2627,7 @@ index 7bb2c727a..000000000
 -</svg>
 diff --git a/dlls/comctl32/idc_copy.svg b/dlls/comctl32/idc_copy.svg
 deleted file mode 100644
-index 6bd0de609..000000000
+index 6bd0de6099390c8fd5e8c79b812f93c64a4679a4..0000000000000000000000000000000000000000
 --- a/dlls/comctl32/idc_copy.svg
 +++ /dev/null
 @@ -1,226 +0,0 @@
@@ -2859,7 +2859,7 @@ index 6bd0de609..000000000
 -</svg>
 diff --git a/dlls/comctl32/idc_divider.svg b/dlls/comctl32/idc_divider.svg
 deleted file mode 100644
-index 6c129134c..000000000
+index 6c129134c3076058bf26faabe9377824aa02b6cc..0000000000000000000000000000000000000000
 --- a/dlls/comctl32/idc_divider.svg
 +++ /dev/null
 @@ -1,200 +0,0 @@
@@ -3065,7 +3065,7 @@ index 6c129134c..000000000
 -</svg>
 diff --git a/dlls/comctl32/idc_divideropen.svg b/dlls/comctl32/idc_divideropen.svg
 deleted file mode 100644
-index 30469748a..000000000
+index 30469748ae3a7e7489dd20466373ad5afeaea4e8..0000000000000000000000000000000000000000
 --- a/dlls/comctl32/idc_divideropen.svg
 +++ /dev/null
 @@ -1,224 +0,0 @@
@@ -3295,7 +3295,7 @@ index 30469748a..000000000
 -</svg>
 diff --git a/dlls/comctl32/idc_movebutton.svg b/dlls/comctl32/idc_movebutton.svg
 deleted file mode 100644
-index 91cf86628..000000000
+index 91cf866288b6bf7c02bda7810b13ed49fcf97efc..0000000000000000000000000000000000000000
 --- a/dlls/comctl32/idc_movebutton.svg
 +++ /dev/null
 @@ -1,273 +0,0 @@
@@ -3621,7 +3621,7 @@ z;=ow5+e68esEvZxt!xx??#-!+4Ot~MkgR~ARlb(b>C`c%h#Qrh%bqcFUJy|wN{p%b
 Kr&gleNc;f@wCn=_
 
 diff --git a/dlls/comctl32_v6/Makefile.in b/dlls/comctl32_v6/Makefile.in
-index 7b16e90d9..363d66970 100644
+index 7b16e90d9426e95329e0e18797c30db258bbb96c..363d6697001e4dba65c35bd4d1629499b7c51dd8 100644
 --- a/dlls/comctl32_v6/Makefile.in
 +++ b/dlls/comctl32_v6/Makefile.in
 @@ -23,16 +23,6 @@ SOURCES = \
@@ -3642,7 +3642,7 @@ index 7b16e90d9..363d66970 100644
  	ipaddress.c \
  	listbox.c \
 diff --git a/dlls/comdlg32/Makefile.in b/dlls/comdlg32/Makefile.in
-index 4de12ae34..6fcf01429 100644
+index 4de12ae3487c357a6ca53be43ac5d9600253a5a8..6fcf014297e2220709e869bfdf1d3b56e949cc35 100644
 --- a/dlls/comdlg32/Makefile.in
 +++ b/dlls/comdlg32/Makefile.in
 @@ -18,8 +18,4 @@ SOURCES = \
@@ -3655,7 +3655,7 @@ index 4de12ae34..6fcf01429 100644
 -	pd32_portrait.svg \
  	printdlg.c
 diff --git a/dlls/comdlg32/itemdlg.c b/dlls/comdlg32/itemdlg.c
-index 6e47cb12c..85e9ee49a 100644
+index 6e47cb12ca5ee979329ba2cb13d39e8840a47ad2..85e9ee49ab8bf71a2a2e972d8572ff8afb9b4af1 100644
 --- a/dlls/comdlg32/itemdlg.c
 +++ b/dlls/comdlg32/itemdlg.c
 @@ -39,6 +39,7 @@
@@ -3757,7 +3757,7 @@ index 6e47cb12c..85e9ee49a 100644
      return FALSE;
 diff --git a/dlls/comdlg32/pd32_collate.svg b/dlls/comdlg32/pd32_collate.svg
 deleted file mode 100644
-index 23e6f4761..000000000
+index 23e6f4761a96b825f8fe1b194a7c6067a729ef3d..0000000000000000000000000000000000000000
 --- a/dlls/comdlg32/pd32_collate.svg
 +++ /dev/null
 @@ -1,676 +0,0 @@
@@ -4439,7 +4439,7 @@ index 23e6f4761..000000000
 -</svg>
 diff --git a/dlls/comdlg32/pd32_landscape.svg b/dlls/comdlg32/pd32_landscape.svg
 deleted file mode 100644
-index d52cac332..000000000
+index d52cac332128a7427e0f509ee8d05e1a4cadf650..0000000000000000000000000000000000000000
 --- a/dlls/comdlg32/pd32_landscape.svg
 +++ /dev/null
 @@ -1,30 +0,0 @@
@@ -4475,7 +4475,7 @@ index d52cac332..000000000
 -</svg>
 diff --git a/dlls/comdlg32/pd32_nocollate.svg b/dlls/comdlg32/pd32_nocollate.svg
 deleted file mode 100644
-index f12e05e6e..000000000
+index f12e05e6ecdd419cb4ba87b78119dd359f014ce1..0000000000000000000000000000000000000000
 --- a/dlls/comdlg32/pd32_nocollate.svg
 +++ /dev/null
 @@ -1,1689 +0,0 @@
@@ -6170,7 +6170,7 @@ index f12e05e6e..000000000
 -</svg>
 diff --git a/dlls/comdlg32/pd32_portrait.svg b/dlls/comdlg32/pd32_portrait.svg
 deleted file mode 100644
-index 911d64cf5..000000000
+index 911d64cf59e066d3e67c2e2a46471c8d882ade14..0000000000000000000000000000000000000000
 --- a/dlls/comdlg32/pd32_portrait.svg
 +++ /dev/null
 @@ -1,30 +0,0 @@
@@ -6205,7 +6205,7 @@ index 911d64cf5..000000000
 - <image id="icon:32-4" xlink:href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgBAMAAACBVGfHAAAAAXNSR0IArs4c6QAAAA9QTFRFZXQt ////f39/AAB/wMDARmQiZQAAAAF0Uk5TAEDm2GYAAAABYktHRACIBR1IAAAACXBIWXMAAA3XAAAN 1wFCKJt4AAAAB3RJTUUH2gQWFTENXYIh/gAAAGNJREFUKM/N0s0NgDAIBWDiBggDWDcgrws07L+T rdEGvHjUd/wSfkIgomWf2Wik8Mz6OYi9gdcHVGRQQ0sg7JbAWWoCY0UERU8LINfgCT76RhgNtdfc oOfeAYAuDvzgyBHyOxzx7CJGBKXSjAAAAABJRU5ErkJggg== " height="32" width="32" y="8" x="88"/>
 -</svg>
 diff --git a/dlls/dbghelp/dbghelp.c b/dlls/dbghelp/dbghelp.c
-index 911daeca7..de23b1f12 100644
+index 911daeca7822d198f222ecc1dd89ee90c93b7163..de23b1f127ca83912c6d24045d37b4e99fe57488 100644
 --- a/dlls/dbghelp/dbghelp.c
 +++ b/dlls/dbghelp/dbghelp.c
 @@ -458,7 +458,13 @@ BOOL WINAPI SymInitializeW(HANDLE hProcess, PCWSTR UserSearchPath, BOOL fInvadeP
@@ -6238,7 +6238,7 @@ index 911daeca7..de23b1f12 100644
      {
          if ((*ppcs)->handle == hProcess)
 diff --git a/dlls/inetcpl.cpl/Makefile.in b/dlls/inetcpl.cpl/Makefile.in
-index ee0204540..2836380e1 100644
+index ee0204540a2af752d08393ef11ee6ff1573a55f3..2836380e1a7e6b2c507b90c93d7ea98540c0c5ea 100644
 --- a/dlls/inetcpl.cpl/Makefile.in
 +++ b/dlls/inetcpl.cpl/Makefile.in
 @@ -13,5 +13,4 @@ SOURCES = \
@@ -6248,7 +6248,7 @@ index ee0204540..2836380e1 100644
 -	inetcpl.svg \
  	security.c
 diff --git a/dlls/inetcpl.cpl/inetcpl.h b/dlls/inetcpl.cpl/inetcpl.h
-index ff7d7d535..ed275e079 100644
+index ff7d7d535d04c84465499b7d07359754e89df4cf..ed275e079cd0cf25eb2141c5f56670d688fa836e 100644
 --- a/dlls/inetcpl.cpl/inetcpl.h
 +++ b/dlls/inetcpl.cpl/inetcpl.h
 @@ -35,8 +35,10 @@ INT_PTR CALLBACK security_dlgproc(HWND, UINT, WPARAM, LPARAM);
@@ -6265,7 +6265,7 @@ index ff7d7d535..ed275e079 100644
  /* strings */
  #define IDS_CPL_NAME        1
 diff --git a/dlls/inetcpl.cpl/inetcpl.rc b/dlls/inetcpl.cpl/inetcpl.rc
-index 3c4fe8bd3..99b544ae9 100644
+index 3c4fe8bd3f774add2959442470425ac37c556dbd..99b544ae9d52d6e15898dd40be648a7fa5c40f94 100644
 --- a/dlls/inetcpl.cpl/inetcpl.rc
 +++ b/dlls/inetcpl.cpl/inetcpl.rc
 @@ -142,3 +142,9 @@ LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
@@ -6281,7 +6281,7 @@ index 3c4fe8bd3..99b544ae9 100644
 \ No newline at end of file
 diff --git a/dlls/inetcpl.cpl/inetcpl.svg b/dlls/inetcpl.cpl/inetcpl.svg
 deleted file mode 100644
-index df767ba70..000000000
+index df767ba702f3eb3bb3146c8057447bef506d2142..0000000000000000000000000000000000000000
 --- a/dlls/inetcpl.cpl/inetcpl.svg
 +++ /dev/null
 @@ -1,2361 +0,0 @@
@@ -8680,7 +8680,7 @@ literal 0
 HcmV?d00001
 
 diff --git a/dlls/kernel32/tests/path.c b/dlls/kernel32/tests/path.c
-index 4629786dd..e50f74498 100644
+index 4629786ddb5378064f81f5ee6851baacfde0daa1..e50f744988b3fc498f25850f9121cc40e303f5e7 100644
 --- a/dlls/kernel32/tests/path.c
 +++ b/dlls/kernel32/tests/path.c
 @@ -83,6 +83,9 @@ static NTSTATUS (WINAPI *pLdrGetDllPath)(LPCWSTR,ULONG,LPWSTR*,LPWSTR*);
@@ -8804,7 +8804,7 @@ index 4629786dd..e50f74498 100644
 +    test_CreateSymbolicLink();
  }
 diff --git a/dlls/mfplat/main.c b/dlls/mfplat/main.c
-index f0716cc9a..4212f6aef 100644
+index f0716cc9abb3e0c188e945071de17e94b23f83a5..4212f6aefcf154d38552d0a5fca343f7468bceb8 100644
 --- a/dlls/mfplat/main.c
 +++ b/dlls/mfplat/main.c
 @@ -9684,9 +9684,16 @@ static const IMFDXGIDeviceManagerVtbl dxgi_device_manager_vtbl =
@@ -8825,7 +8825,7 @@ index f0716cc9a..4212f6aef 100644
          return E_POINTER;
  
 diff --git a/dlls/midimap/Makefile.in b/dlls/midimap/Makefile.in
-index 35ae70438..95df082e2 100644
+index 35ae704386f5ecb2d55a4567189ee37809591140..95df082e228785696ca82638c46d7d911c0bce5b 100644
 --- a/dlls/midimap/Makefile.in
 +++ b/dlls/midimap/Makefile.in
 @@ -1,5 +1,5 @@
@@ -8837,7 +8837,7 @@ index 35ae70438..95df082e2 100644
  SOURCES = \
  	midimap.c
 diff --git a/dlls/midimap/midimap.c b/dlls/midimap/midimap.c
-index e04fe7213..fabb53849 100644
+index e04fe721364bf2f45edcbf30700a84181214feeb..fabb538499cff94bdc1c7f68590789f96de4a1a6 100644
 --- a/dlls/midimap/midimap.c
 +++ b/dlls/midimap/midimap.c
 @@ -1,7 +1,8 @@
@@ -9846,7 +9846,7 @@ index e04fe7213..fabb53849 100644
      }
  }
 diff --git a/dlls/midimap/midimap.spec b/dlls/midimap/midimap.spec
-index eda860a9d..eaa302f61 100644
+index eda860a9d129e46d5da60f28ebb74595244fcfeb..eaa302f61dcff6a9b4660636fdb9851365c64589 100644
 --- a/dlls/midimap/midimap.spec
 +++ b/dlls/midimap/midimap.spec
 @@ -1,3 +1,4 @@
@@ -9855,7 +9855,7 @@ index eda860a9d..eaa302f61 100644
 +@ stdcall -private midMessage(long long long long long) MIDIMAP_midMessage
  @ stub modmCallback
 diff --git a/dlls/mountmgr.sys/device.c b/dlls/mountmgr.sys/device.c
-index f3e160fce..43f33a2a3 100644
+index f3e160fced3034a3b079bd669d536b2463d722ac..43f33a2a3243cae3595011fda8e3a80f40626510 100644
 --- a/dlls/mountmgr.sys/device.c
 +++ b/dlls/mountmgr.sys/device.c
 @@ -177,6 +177,36 @@ static void get_filesystem_serial( struct volume *volume )
@@ -10104,7 +10104,7 @@ index f3e160fce..43f33a2a3 100644
  
      RegCloseKey( wine_ports_key );
 diff --git a/dlls/mountmgr.sys/unixlib.c b/dlls/mountmgr.sys/unixlib.c
-index 575a26e9a..e92e937a5 100644
+index 575a26e9a1c0ed89e42cb389f73d476848fd7d88..c398912bf4fcb4efc629cd6ae858589bb9b68912 100644
 --- a/dlls/mountmgr.sys/unixlib.c
 +++ b/dlls/mountmgr.sys/unixlib.c
 @@ -36,11 +36,23 @@
@@ -10311,65 +10311,7 @@ index 575a26e9a..e92e937a5 100644
  static NTSTATUS match_unixdev( void *args )
  {
      const struct match_unixdev_params *params = args;
-@@ -534,10 +609,12 @@ static NTSTATUS detect_parallel_ports( void *args )
- static NTSTATUS set_shell_folder( void *args )
- {
-     const struct set_shell_folder_params *params = args;
-+    const char *folder = params->folder;
-+    const char *backup = params->backup;
-     const char *link = params->link;
-     struct stat st;
-     const char *home;
--    char *folder = NULL, *backup = NULL, *homelink = NULL;
-+    char *homelink = NULL;
-     NTSTATUS status = STATUS_SUCCESS;
- 
-     if (link && (!strcmp( link, "$HOME" ) || !strncmp( link, "$HOME/", 6 )) && (home = getenv( "HOME" )))
-@@ -554,12 +631,6 @@ static NTSTATUS set_shell_folder( void *args )
-         goto done;
-     }
- 
--    status = ntdll_get_unix_file_name( params->folder, &folder, FILE_OPEN_IF );
--    if (status == STATUS_NO_SUCH_FILE) status = STATUS_SUCCESS;
--    if (status) goto done;
--
--    if (params->create_backup) asprintf( &backup, "%s.backup", folder );
--
-     if (!lstat( folder, &st )) /* move old folder/link out of the way */
-     {
-         if (S_ISLNK( st.st_mode ))
-@@ -588,8 +659,6 @@ static NTSTATUS set_shell_folder( void *args )
-     }
- 
- done:
--    free( backup );
--    free( folder );
-     free( homelink );
-     return status;
- }
-@@ -597,17 +666,11 @@ done:
- static NTSTATUS get_shell_folder( void *args )
- {
-     const struct get_shell_folder_params *params = args;
--    char *folder = NULL;
--    NTSTATUS status = ntdll_get_unix_file_name( params->folder, &folder, FILE_OPEN );
-+    int ret = readlink( params->folder, params->buffer, params->size - 1 );
- 
--    if (!status)
--    {
--        int ret = readlink( folder, params->buffer, params->size - 1 );
--        free( folder );
--        if (ret < 0) return STATUS_OBJECT_NAME_NOT_FOUND;
--        params->buffer[ret] = 0;
--    }
--    return status;
-+    if (ret < 0) return STATUS_OBJECT_NAME_NOT_FOUND;
-+    params->buffer[ret] = 0;
-+    return STATUS_SUCCESS;
- }
- 
- const unixlib_entry_t __wine_unix_call_funcs[] =
-@@ -632,6 +695,7 @@ const unixlib_entry_t __wine_unix_call_funcs[] =
+@@ -632,6 +707,7 @@ const unixlib_entry_t __wine_unix_call_funcs[] =
      write_credential,
      delete_credential,
      enumerate_credentials,
@@ -10378,7 +10320,7 @@ index 575a26e9a..e92e937a5 100644
  
  C_ASSERT( ARRAYSIZE(__wine_unix_call_funcs) == unix_funcs_count );
 diff --git a/dlls/mountmgr.sys/unixlib.h b/dlls/mountmgr.sys/unixlib.h
-index c17e5f706..b77b15954 100644
+index c17e5f706382b1f4f5a0827491b3a10cc4603343..b77b15954283732169f27c785aa4b0a222291a27 100644
 --- a/dlls/mountmgr.sys/unixlib.h
 +++ b/dlls/mountmgr.sys/unixlib.h
 @@ -91,6 +91,7 @@ struct set_dosdev_symlink_params
@@ -10412,7 +10354,7 @@ index c17e5f706..b77b15954 100644
  };
  
 diff --git a/dlls/mscoree/metahost.c b/dlls/mscoree/metahost.c
-index 262a9851c..ed4b29239 100644
+index 262a9851c698a94b33d2743f38052651e2798c1b..ed4b29239882cd46f7f3b6901ea2daf25d327dfe 100644
 --- a/dlls/mscoree/metahost.c
 +++ b/dlls/mscoree/metahost.c
 @@ -407,6 +407,15 @@ static HRESULT WINAPI thread_unset_fn(void)
@@ -10441,7 +10383,7 @@ index 262a9851c..ed4b29239 100644
      }
  
 diff --git a/dlls/nsiproxy.sys/ip.c b/dlls/nsiproxy.sys/ip.c
-index 6c4d5808b..9106b5701 100644
+index 6c4d5808be40d2f112b6205e419a309eb4f3dd74..9106b570149086c7ea8614773d95683d0b9a64d6 100644
 --- a/dlls/nsiproxy.sys/ip.c
 +++ b/dlls/nsiproxy.sys/ip.c
 @@ -59,10 +59,6 @@
@@ -10811,7 +10753,7 @@ index 6c4d5808b..9106b5701 100644
          NSI_IP_UNICAST_TABLE,
          {
 diff --git a/dlls/nsiproxy.sys/ndis.c b/dlls/nsiproxy.sys/ndis.c
-index 5dde17244..252f64688 100644
+index 5dde17244d9a6164dcf69b3470d2cb769419c781..252f64688896aa6873eba6ab6a055278ae987c3f 100644
 --- a/dlls/nsiproxy.sys/ndis.c
 +++ b/dlls/nsiproxy.sys/ndis.c
 @@ -29,7 +29,8 @@
@@ -11004,7 +10946,7 @@ index 5dde17244..252f64688 100644
  }
  
 diff --git a/dlls/nsiproxy.sys/tcp.c b/dlls/nsiproxy.sys/tcp.c
-index 0b3a8ab5a..9487fcb42 100644
+index 0b3a8ab5a19981c4b306801e1ab9df494bb2c428..9487fcb428ea8d67382282fab3916a6f5a532a68 100644
 --- a/dlls/nsiproxy.sys/tcp.c
 +++ b/dlls/nsiproxy.sys/tcp.c
 @@ -188,82 +188,30 @@ struct ipv6_addr_scope *get_ipv6_addr_scope_table( unsigned int *size )
@@ -11106,7 +11048,7 @@ index 0b3a8ab5a..9487fcb42 100644
      *size = num;
      return table;
 diff --git a/dlls/nsiproxy.sys/unix_private.h b/dlls/nsiproxy.sys/unix_private.h
-index 170bdba66..f1d55cc3e 100644
+index 170bdba665da6bc2d7d435f7d5179230050dba33..f1d55cc3e0e2f50e6c57913f86792ba1d0434541 100644
 --- a/dlls/nsiproxy.sys/unix_private.h
 +++ b/dlls/nsiproxy.sys/unix_private.h
 @@ -28,6 +28,8 @@ NTSTATUS nsi_enumerate_all_ex( struct nsi_enumerate_all_ex *params );
@@ -11119,7 +11061,7 @@ index 170bdba66..f1d55cc3e 100644
                                            void *key_data, UINT key_size, void *rw_data, UINT rw_size,
                                            void *dynamic_data, UINT dynamic_size, void *static_data, UINT static_size,
 diff --git a/dlls/ntdll/unix/env.c b/dlls/ntdll/unix/env.c
-index 460888b95..9b667ceb3 100644
+index 460888b95df3a1e5398949573146058d66fb6244..9b667ceb3fd818b3e9285675c5b281349a30f4ba 100644
 --- a/dlls/ntdll/unix/env.c
 +++ b/dlls/ntdll/unix/env.c
 @@ -1029,6 +1029,7 @@ static void add_system_dll_path_var( WCHAR **env, SIZE_T *pos, SIZE_T *size )
@@ -11228,7 +11170,7 @@ index 460888b95..9b667ceb3 100644
      copy_unicode_string( &src, &dst, &params->Desktop, info->desktop_len );
      copy_unicode_string( &src, &dst, &params->ShellInfo, info->shellinfo_len );
 diff --git a/dlls/ntdll/unix/loader.c b/dlls/ntdll/unix/loader.c
-index 2b6dbf248..b2d7415bb 100644
+index 2b6dbf248f0ceeeefd18851ca1acbf70860ba0b5..b2d7415bb5ec0b06048a1b5cbcee0fc03b70641c 100644
 --- a/dlls/ntdll/unix/loader.c
 +++ b/dlls/ntdll/unix/loader.c
 @@ -2013,6 +2013,7 @@ static int pre_exec(void)
@@ -11249,7 +11191,7 @@ index 2b6dbf248..b2d7415bb 100644
  }
  
 diff --git a/dlls/ntdll/unix/process.c b/dlls/ntdll/unix/process.c
-index 418f95b77..4dae4dcae 100644
+index 418f95b7735fbfc8b7bbc6f07536635166b41274..4dae4dcae9bee9c3d5de62023802291c8218ab92 100644
 --- a/dlls/ntdll/unix/process.c
 +++ b/dlls/ntdll/unix/process.c
 @@ -78,6 +78,22 @@ static ULONG execute_flags = MEM_EXECUTE_OPTION_DISABLE;
@@ -11301,7 +11243,7 @@ index 418f95b77..4dae4dcae 100644
              ret = wine_server_call( req );
          }
 diff --git a/dlls/ntdll/unix/server.c b/dlls/ntdll/unix/server.c
-index 730a0cd9a..98ea0e01f 100644
+index 730a0cd9a94251c79577186b488a491747f48cf8..98ea0e01f842cc4c90ce6cabfecdc7850d0f7e5e 100644
 --- a/dlls/ntdll/unix/server.c
 +++ b/dlls/ntdll/unix/server.c
 @@ -939,6 +939,32 @@ unsigned int server_queue_process_apc( HANDLE process, const union apc_call *cal
@@ -11365,7 +11307,7 @@ index 730a0cd9a..98ea0e01f 100644
      {
          req->handle = wine_server_obj_handle( handle );
 diff --git a/dlls/ntdll/unix/virtual.c b/dlls/ntdll/unix/virtual.c
-index db820a895..cb08dc2ee 100644
+index db820a89525ac4eb54134c675c5c1ee64592763d..cb08dc2eeda23e59744545ff061165157c5acae3 100644
 --- a/dlls/ntdll/unix/virtual.c
 +++ b/dlls/ntdll/unix/virtual.c
 @@ -199,6 +199,8 @@ static void *working_set_limit   = (void *)0x7fff0000;
@@ -11409,7 +11351,7 @@ index db820a895..cb08dc2ee 100644
      if (*ret)
      {
 diff --git a/dlls/ntdll/version.c b/dlls/ntdll/version.c
-index c58fa2fe5..4689eb937 100644
+index c58fa2fe51fad7d011d280386d8001e3d418b186..4689eb937f013d217732310c6b112b3d4a0ed96b 100644
 --- a/dlls/ntdll/version.c
 +++ b/dlls/ntdll/version.c
 @@ -520,11 +520,27 @@ done:
@@ -11445,7 +11387,7 @@ index c58fa2fe5..4689eb937 100644
  
  
 diff --git a/dlls/rpcrt4/rpc_server.c b/dlls/rpcrt4/rpc_server.c
-index eb733f699..02193b862 100644
+index eb733f6998088fc0630af35106b5d26905469b0a..02193b862ba671bbc397d6b5558b62c8cafcc750 100644
 --- a/dlls/rpcrt4/rpc_server.c
 +++ b/dlls/rpcrt4/rpc_server.c
 @@ -701,10 +701,6 @@ static DWORD CALLBACK RPCRT4_server_thread(LPVOID the_arg)
@@ -11479,7 +11421,7 @@ index eb733f699..02193b862 100644
    }
    if (listen_done_event == event)
 diff --git a/dlls/sechost/service.c b/dlls/sechost/service.c
-index f05fd2d7e..a5b9976cb 100644
+index f05fd2d7e80e4e28b6e7a1c27313b3abd96c63a6..a5b9976cb6d86720746c54b114d7f5caeb832b8d 100644
 --- a/dlls/sechost/service.c
 +++ b/dlls/sechost/service.c
 @@ -271,9 +271,13 @@ SC_HANDLE WINAPI DECLSPEC_HOTPATCH OpenSCManagerW( const WCHAR *machine, const W
@@ -11497,7 +11439,7 @@ index f05fd2d7e..a5b9976cb 100644
      {
          err = svcctl_OpenSCManagerW( machine, database, access, &handle );
 diff --git a/dlls/user32/Makefile.in b/dlls/user32/Makefile.in
-index 0d8a18fdd..f2a442626 100644
+index 0d8a18fddca2a190e543ac59b09ba914e6bbcc6e..f2a442626f3647f772877ecebf68ed119691b61a 100644
 --- a/dlls/user32/Makefile.in
 +++ b/dlls/user32/Makefile.in
 @@ -35,29 +35,6 @@ SOURCES = \
@@ -11531,7 +11473,7 @@ index 0d8a18fdd..f2a442626 100644
  	static.c \
  	sysparams.c \
 diff --git a/dlls/user32/clipboard.c b/dlls/user32/clipboard.c
-index 4a05d40dc..6abd64fc4 100644
+index 4a05d40dc1e53c922484bd96448c21363515e113..6abd64fc46117cb7d9e1ace6763bc238c2801c4d 100644
 --- a/dlls/user32/clipboard.c
 +++ b/dlls/user32/clipboard.c
 @@ -33,7 +33,6 @@
@@ -11574,7 +11516,7 @@ index 4a05d40dc..6abd64fc4 100644
  
  
 diff --git a/dlls/user32/desktop.c b/dlls/user32/desktop.c
-index 35cf39b9c..fad651dc0 100644
+index 35cf39b9c2053c34423877be00d3ecb9a3a59537..fad651dc01fa227b91a0ab70599b8e20bbe0b4ce 100644
 --- a/dlls/user32/desktop.c
 +++ b/dlls/user32/desktop.c
 @@ -158,11 +158,11 @@ BOOL WINAPI PaintDesktop(HDC hdc)
@@ -11595,7 +11537,7 @@ index 35cf39b9c..fad651dc0 100644
              DeleteDC( hMemDC );
          }
 diff --git a/dlls/user32/message.c b/dlls/user32/message.c
-index 42f4a8077..f9c40bd30 100644
+index 42f4a80778c6287f9449b72ea2f8622f9e802082..f9c40bd305dd5452b4daaba2bf0d67c93f63566b 100644
 --- a/dlls/user32/message.c
 +++ b/dlls/user32/message.c
 @@ -28,7 +28,6 @@
@@ -11651,7 +11593,7 @@ index 42f4a8077..f9c40bd30 100644
      DWORD flags;
 diff --git a/dlls/user32/resources/ocr_appstarting.svg b/dlls/user32/resources/ocr_appstarting.svg
 deleted file mode 100644
-index 4fba91dce..000000000
+index 4fba91dce88fe8c99a0d35caf09dc7a7d854e054..0000000000000000000000000000000000000000
 --- a/dlls/user32/resources/ocr_appstarting.svg
 +++ /dev/null
 @@ -1,425 +0,0 @@
@@ -12082,7 +12024,7 @@ index 4fba91dce..000000000
 -</svg>
 diff --git a/dlls/user32/resources/ocr_cross.svg b/dlls/user32/resources/ocr_cross.svg
 deleted file mode 100644
-index af75c2379..000000000
+index af75c2379bc794b93faf788b588c3be5023537b1..0000000000000000000000000000000000000000
 --- a/dlls/user32/resources/ocr_cross.svg
 +++ /dev/null
 @@ -1,198 +0,0 @@
@@ -12286,7 +12228,7 @@ index af75c2379..000000000
 -</svg>
 diff --git a/dlls/user32/resources/ocr_hand.svg b/dlls/user32/resources/ocr_hand.svg
 deleted file mode 100644
-index b94298ca5..000000000
+index b94298ca5bfb0cc930d6391808ebcb5ebb70dc5c..0000000000000000000000000000000000000000
 --- a/dlls/user32/resources/ocr_hand.svg
 +++ /dev/null
 @@ -1,204 +0,0 @@
@@ -12496,7 +12438,7 @@ index b94298ca5..000000000
 -</svg>
 diff --git a/dlls/user32/resources/ocr_help.svg b/dlls/user32/resources/ocr_help.svg
 deleted file mode 100644
-index 22b993166..000000000
+index 22b9931668cac4868ddcc9038ca6acdc72180c6e..0000000000000000000000000000000000000000
 --- a/dlls/user32/resources/ocr_help.svg
 +++ /dev/null
 @@ -1,307 +0,0 @@
@@ -12809,7 +12751,7 @@ index 22b993166..000000000
 -</svg>
 diff --git a/dlls/user32/resources/ocr_ibeam.svg b/dlls/user32/resources/ocr_ibeam.svg
 deleted file mode 100644
-index fe3051e3f..000000000
+index fe3051e3fa16b47319e972be297cd9feb978067e..0000000000000000000000000000000000000000
 --- a/dlls/user32/resources/ocr_ibeam.svg
 +++ /dev/null
 @@ -1,186 +0,0 @@
@@ -13001,7 +12943,7 @@ index fe3051e3f..000000000
 -</svg>
 diff --git a/dlls/user32/resources/ocr_no.svg b/dlls/user32/resources/ocr_no.svg
 deleted file mode 100644
-index db42056a7..000000000
+index db42056a7e13d7aa633944e90aa3dab851a9c5fa..0000000000000000000000000000000000000000
 --- a/dlls/user32/resources/ocr_no.svg
 +++ /dev/null
 @@ -1,196 +0,0 @@
@@ -13203,7 +13145,7 @@ index db42056a7..000000000
 -</svg>
 diff --git a/dlls/user32/resources/ocr_normal.svg b/dlls/user32/resources/ocr_normal.svg
 deleted file mode 100644
-index 8096ac71a..000000000
+index 8096ac71aad2fbeaf6867738f9fac25f3bbd5167..0000000000000000000000000000000000000000
 --- a/dlls/user32/resources/ocr_normal.svg
 +++ /dev/null
 @@ -1,213 +0,0 @@
@@ -13422,7 +13364,7 @@ index 8096ac71a..000000000
 -</svg>
 diff --git a/dlls/user32/resources/ocr_pen.svg b/dlls/user32/resources/ocr_pen.svg
 deleted file mode 100644
-index c343d97ed..000000000
+index c343d97ed6ac15bc86f1db679b147dacf44f16ef..0000000000000000000000000000000000000000
 --- a/dlls/user32/resources/ocr_pen.svg
 +++ /dev/null
 @@ -1,274 +0,0 @@
@@ -13702,7 +13644,7 @@ index c343d97ed..000000000
 -</svg>
 diff --git a/dlls/user32/resources/ocr_size.svg b/dlls/user32/resources/ocr_size.svg
 deleted file mode 100644
-index 51edfbc40..000000000
+index 51edfbc40081c5961299dba2f996f5f68695be89..0000000000000000000000000000000000000000
 --- a/dlls/user32/resources/ocr_size.svg
 +++ /dev/null
 @@ -1,179 +0,0 @@
@@ -13887,7 +13829,7 @@ index 51edfbc40..000000000
 -</svg>
 diff --git a/dlls/user32/resources/ocr_sizeall.svg b/dlls/user32/resources/ocr_sizeall.svg
 deleted file mode 100644
-index c3669b83d..000000000
+index c3669b83db6a907a7d04eecd080a76099196085c..0000000000000000000000000000000000000000
 --- a/dlls/user32/resources/ocr_sizeall.svg
 +++ /dev/null
 @@ -1,218 +0,0 @@
@@ -14111,7 +14053,7 @@ index c3669b83d..000000000
 -</svg>
 diff --git a/dlls/user32/resources/ocr_sizenesw.svg b/dlls/user32/resources/ocr_sizenesw.svg
 deleted file mode 100644
-index 9770d2f1f..000000000
+index 9770d2f1fdbda17ca707f7c61bab0a82f82c931a..0000000000000000000000000000000000000000
 --- a/dlls/user32/resources/ocr_sizenesw.svg
 +++ /dev/null
 @@ -1,203 +0,0 @@
@@ -14320,7 +14262,7 @@ index 9770d2f1f..000000000
 -</svg>
 diff --git a/dlls/user32/resources/ocr_sizens.svg b/dlls/user32/resources/ocr_sizens.svg
 deleted file mode 100644
-index 5ea5703ea..000000000
+index 5ea5703eac42e293146ca6680b251f93fafc1dcc..0000000000000000000000000000000000000000
 --- a/dlls/user32/resources/ocr_sizens.svg
 +++ /dev/null
 @@ -1,196 +0,0 @@
@@ -14522,7 +14464,7 @@ index 5ea5703ea..000000000
 -</svg>
 diff --git a/dlls/user32/resources/ocr_sizenwse.svg b/dlls/user32/resources/ocr_sizenwse.svg
 deleted file mode 100644
-index f194b366c..000000000
+index f194b366cca208f616c3978b2162308a4a094c0f..0000000000000000000000000000000000000000
 --- a/dlls/user32/resources/ocr_sizenwse.svg
 +++ /dev/null
 @@ -1,207 +0,0 @@
@@ -14735,7 +14677,7 @@ index f194b366c..000000000
 -</svg>
 diff --git a/dlls/user32/resources/ocr_sizewe.svg b/dlls/user32/resources/ocr_sizewe.svg
 deleted file mode 100644
-index 5d6273d6f..000000000
+index 5d6273d6f72c521501154da1bebe35161de86573..0000000000000000000000000000000000000000
 --- a/dlls/user32/resources/ocr_sizewe.svg
 +++ /dev/null
 @@ -1,193 +0,0 @@
@@ -14934,7 +14876,7 @@ index 5d6273d6f..000000000
 -</svg>
 diff --git a/dlls/user32/resources/ocr_up.svg b/dlls/user32/resources/ocr_up.svg
 deleted file mode 100644
-index ae4cfba41..000000000
+index ae4cfba41fe5c0b8ad21552f803d5a8fe0e582d5..0000000000000000000000000000000000000000
 --- a/dlls/user32/resources/ocr_up.svg
 +++ /dev/null
 @@ -1,195 +0,0 @@
@@ -15135,7 +15077,7 @@ index ae4cfba41..000000000
 -</svg>
 diff --git a/dlls/user32/resources/ocr_wait.svg b/dlls/user32/resources/ocr_wait.svg
 deleted file mode 100644
-index a01808b5c..000000000
+index a01808b5c67f99a9f6447a50985bfbb089d3bdfe..0000000000000000000000000000000000000000
 --- a/dlls/user32/resources/ocr_wait.svg
 +++ /dev/null
 @@ -1,341 +0,0 @@
@@ -15958,7 +15900,7 @@ Z<sS0?3v@w}k4OT*J#AyHIt}NT{{fYo(uV*5
 
 diff --git a/dlls/user32/resources/oic_bang.svg b/dlls/user32/resources/oic_bang.svg
 deleted file mode 100644
-index a5ca96530..000000000
+index a5ca96530aaf67e9b7d0ed8e4607bd19a2d6564b..0000000000000000000000000000000000000000
 --- a/dlls/user32/resources/oic_bang.svg
 +++ /dev/null
 @@ -1,415 +0,0 @@
@@ -17063,7 +17005,7 @@ yz2g<(;TPc(X5;1&;pSfD&-D6#1~|J~+1vR2{|8js(F`L702JlaWNW0&!v7C7ra(Uc
 
 diff --git a/dlls/user32/resources/oic_hand.svg b/dlls/user32/resources/oic_hand.svg
 deleted file mode 100644
-index 596c1cde9..000000000
+index 596c1cde980baa541e2042de91169f1e4bdabdce..0000000000000000000000000000000000000000
 --- a/dlls/user32/resources/oic_hand.svg
 +++ /dev/null
 @@ -1,489 +0,0 @@
@@ -18206,7 +18148,7 @@ cYj0|0?)m?}fGj_+0K5SBB&i@#Ep8a}f0Xk0BLDyZ
 
 diff --git a/dlls/user32/resources/oic_note.svg b/dlls/user32/resources/oic_note.svg
 deleted file mode 100644
-index f2b489322..000000000
+index f2b489322d061420ec1cf34d13a17d02b15a59ae..0000000000000000000000000000000000000000
 --- a/dlls/user32/resources/oic_note.svg
 +++ /dev/null
 @@ -1,383 +0,0 @@
@@ -19249,7 +19191,7 @@ D-}fqK
 
 diff --git a/dlls/user32/resources/oic_ques.svg b/dlls/user32/resources/oic_ques.svg
 deleted file mode 100644
-index 1aeded4bd..000000000
+index 1aeded4bdc64cf8ca8cc42d046da836c9d411e73..0000000000000000000000000000000000000000
 --- a/dlls/user32/resources/oic_ques.svg
 +++ /dev/null
 @@ -1,408 +0,0 @@
@@ -19663,7 +19605,7 @@ index 1aeded4bd..000000000
 -</svg>
 diff --git a/dlls/user32/resources/oic_sample.svg b/dlls/user32/resources/oic_sample.svg
 deleted file mode 100644
-index 7a7f45b7b..000000000
+index 7a7f45b7b5f8f08a1ba7fd28f91ec690e4478d9b..0000000000000000000000000000000000000000
 --- a/dlls/user32/resources/oic_sample.svg
 +++ /dev/null
 @@ -1,492 +0,0 @@
@@ -20161,7 +20103,7 @@ index 7a7f45b7b..000000000
 -</svg>
 diff --git a/dlls/user32/resources/oic_shield.svg b/dlls/user32/resources/oic_shield.svg
 deleted file mode 100644
-index c1e6fdee3..000000000
+index c1e6fdee3cee0a6ea98fdd20efa8614067025587..0000000000000000000000000000000000000000
 --- a/dlls/user32/resources/oic_shield.svg
 +++ /dev/null
 @@ -1,373 +0,0 @@
@@ -20540,7 +20482,7 @@ index c1e6fdee3..000000000
 -</svg>
 diff --git a/dlls/user32/resources/oic_winlogo.svg b/dlls/user32/resources/oic_winlogo.svg
 deleted file mode 100644
-index 1d3b7f881..000000000
+index 1d3b7f88123e45e561a24b1b4865d2bad8596741..0000000000000000000000000000000000000000
 --- a/dlls/user32/resources/oic_winlogo.svg
 +++ /dev/null
 @@ -1,1237 +0,0 @@
@@ -21782,7 +21724,7 @@ index 1d3b7f881..000000000
 -  </g>
 -</svg>
 diff --git a/dlls/user32/tests/msg.c b/dlls/user32/tests/msg.c
-index feae709ae..42bd2e5ce 100644
+index feae709ae2a46c8836690afbc4cff2c5e40f97d4..42bd2e5cefcd0afc36fa7a2a0b770894d8ce5fc1 100644
 --- a/dlls/user32/tests/msg.c
 +++ b/dlls/user32/tests/msg.c
 @@ -14683,13 +14683,10 @@ static void test_PeekMessage3(void)
@@ -21860,7 +21802,7 @@ index feae709ae..42bd2e5ce 100644
       * because both messages are in the same queue. */
  
 diff --git a/dlls/win32u/main.c b/dlls/win32u/main.c
-index 22e5368b1..50f83090c 100644
+index 22e5368b132b71320c163d2f1fc75ac59ddbdd78..50f83090c168cde883b04da1673b2b4db862b058 100644
 --- a/dlls/win32u/main.c
 +++ b/dlls/win32u/main.c
 @@ -2110,11 +2110,6 @@ BOOL SYSCALL_API NtUserRegisterTouchPadCapable( BOOL capable )
@@ -21876,7 +21818,7 @@ index 22e5368b1..50f83090c 100644
  {
      SYSCALL_FUNC( NtUserReleaseCapture );
 diff --git a/dlls/win32u/menu.c b/dlls/win32u/menu.c
-index a700f44af..002c97dea 100644
+index a700f44af78befb59cad46b20c3d6d175d344b3f..002c97deadd6db9faae8846e36eef8493a89e9b6 100644
 --- a/dlls/win32u/menu.c
 +++ b/dlls/win32u/menu.c
 @@ -2080,7 +2080,7 @@ static void calc_menu_item_size( HDC hdc, struct menu_item *item, HWND owner, IN
@@ -21919,7 +21861,7 @@ index a700f44af..002c97dea 100644
          if (item->fState & MFS_DEFAULT)
          {
 diff --git a/dlls/win32u/sysparams.c b/dlls/win32u/sysparams.c
-index fa22d6294..3da5539e0 100644
+index fa22d6294c0f2cabfb7613a12f879675c9910050..3da5539e001aaf7a0a6f1e3ff3a4293dc86a6ee7 100644
 --- a/dlls/win32u/sysparams.c
 +++ b/dlls/win32u/sysparams.c
 @@ -4470,7 +4470,10 @@ LONG WINAPI NtUserChangeDisplaySettings( UNICODE_STRING *devname, DEVMODEW *devm
@@ -21935,7 +21877,7 @@ index fa22d6294..3da5539e0 100644
      else if (flags & (CDS_TEST | CDS_NORESET)) ret = DISP_CHANGE_SUCCESSFUL;
      else ret = apply_display_settings( source, &full_mode, hwnd, flags, lparam );
 diff --git a/dlls/win32u/winstation.c b/dlls/win32u/winstation.c
-index 3da9acdd3..d61e2d58b 100644
+index 3da9acdd3afffdbe2252b29c9dd963c8bf070477..d61e2d58b21847f5b98b5593026871234be3ecbc 100644
 --- a/dlls/win32u/winstation.c
 +++ b/dlls/win32u/winstation.c
 @@ -44,6 +44,8 @@ WINE_DECLARE_DEBUG_CHANNEL(win);
@@ -21968,7 +21910,7 @@ index 3da9acdd3..d61e2d58b 100644
      {
          buffer = malloc( params->Desktop.Length + sizeof(WCHAR) );
 diff --git a/dlls/winebus.sys/Makefile.in b/dlls/winebus.sys/Makefile.in
-index c2823e13f..141795d95 100644
+index c2823e13f8dc69fd5fe024e854bed75907c54eef..141795d95d82bc2ca01dd0e2ad068f633ae5c605 100644
 --- a/dlls/winebus.sys/Makefile.in
 +++ b/dlls/winebus.sys/Makefile.in
 @@ -10,6 +10,7 @@ SOURCES = \
@@ -21981,7 +21923,7 @@ index c2823e13f..141795d95 100644
  	unixlib.c \
 diff --git a/dlls/winebus.sys/bus_winlator.c b/dlls/winebus.sys/bus_winlator.c
 new file mode 100644
-index 000000000..fb32dd4b3
+index 0000000000000000000000000000000000000000..fb32dd4b389bf708c876f0d92b06cd206e5a71b0
 --- /dev/null
 +++ b/dlls/winebus.sys/bus_winlator.c
 @@ -0,0 +1,514 @@
@@ -22500,7 +22442,7 @@ index 000000000..fb32dd4b3
 +    return STATUS_SUCCESS;
 +}
 diff --git a/dlls/winebus.sys/main.c b/dlls/winebus.sys/main.c
-index b408cf946..256f0747e 100644
+index b408cf9460c0d4b81afc8ee5bfb586bf001a4170..256f0747e768617aa63a5408772ac40d57fc92c6 100644
 --- a/dlls/winebus.sys/main.c
 +++ b/dlls/winebus.sys/main.c
 @@ -1273,6 +1273,19 @@ static NTSTATUS iohid_driver_init(void)
@@ -22533,7 +22475,7 @@ index b408cf946..256f0747e 100644
          break;
 diff --git a/dlls/winebus.sys/time_utils.h b/dlls/winebus.sys/time_utils.h
 new file mode 100644
-index 000000000..fab7e0a0c
+index 0000000000000000000000000000000000000000..fab7e0a0cd17e97de1ec7fdcce63b591df564000
 --- /dev/null
 +++ b/dlls/winebus.sys/time_utils.h
 @@ -0,0 +1,34 @@
@@ -22572,7 +22514,7 @@ index 000000000..fab7e0a0c
 +
 +#endif
 diff --git a/dlls/winebus.sys/unix_private.h b/dlls/winebus.sys/unix_private.h
-index c39c87872..1f07056f0 100644
+index c39c8787247ba9b3f5c5274e490bc66a96499813..1f07056f0414a7f8099cbe0b63601c1a98e7b200 100644
 --- a/dlls/winebus.sys/unix_private.h
 +++ b/dlls/winebus.sys/unix_private.h
 @@ -234,6 +234,10 @@ extern NTSTATUS iohid_bus_init(void *);
@@ -22587,7 +22529,7 @@ index c39c87872..1f07056f0 100644
  extern void bus_event_queue_destroy(struct list *queue);
  extern BOOL bus_event_queue_device_removed(struct list *queue, struct unix_device *device);
 diff --git a/dlls/winebus.sys/unixlib.c b/dlls/winebus.sys/unixlib.c
-index e3cabbc8c..1476764cc 100644
+index e3cabbc8c349b8cd7a72e05eb88dea68cf37476f..1476764cceb2bcb11a5fbd8e3c23c8019e58eba9 100644
 --- a/dlls/winebus.sys/unixlib.c
 +++ b/dlls/winebus.sys/unixlib.c
 @@ -318,6 +318,9 @@ const unixlib_entry_t __wine_unix_call_funcs[] =
@@ -22601,7 +22543,7 @@ index e3cabbc8c..1476764cc 100644
  
  C_ASSERT(ARRAYSIZE(__wine_unix_call_funcs) == unix_funcs_count);
 diff --git a/dlls/winebus.sys/unixlib.h b/dlls/winebus.sys/unixlib.h
-index d2b17f4c6..8a7238e7e 100644
+index d2b17f4c6d39a9d390ce3474e47bd45c2b840e34..8a7238e7e7b552b7e1203def783542807bb9ab3e 100644
 --- a/dlls/winebus.sys/unixlib.h
 +++ b/dlls/winebus.sys/unixlib.h
 @@ -153,6 +153,9 @@ enum unix_funcs
@@ -22615,7 +22557,7 @@ index d2b17f4c6..8a7238e7e 100644
  };
  
 diff --git a/dlls/winex11.drv/init.c b/dlls/winex11.drv/init.c
-index c067c1cd6..ef88b4a82 100644
+index c067c1cd69213f72110d8809e1e24cb96c86122d..ef88b4a823aaff0ef11d3a3bea11fcabeca42635 100644
 --- a/dlls/winex11.drv/init.c
 +++ b/dlls/winex11.drv/init.c
 @@ -48,6 +48,8 @@ static pthread_once_t init_once = PTHREAD_ONCE_INIT;
@@ -22646,7 +22588,7 @@ index c067c1cd6..ef88b4a82 100644
      TRACE( "Created %s for client window %lx\n", debugstr_client_surface( &surface->client ), surface->window );
      return &surface->client;
 diff --git a/dlls/winex11.drv/keyboard.c b/dlls/winex11.drv/keyboard.c
-index e909e0a56..f1139e207 100644
+index e909e0a56ec1f361da4f8900a42a9b5acd4744db..f1139e20781a1bee834b50325a551cc2f75327a8 100644
 --- a/dlls/winex11.drv/keyboard.c
 +++ b/dlls/winex11.drv/keyboard.c
 @@ -92,6 +92,14 @@ static int min_keycode, max_keycode, keysyms_per_keycode;
@@ -22791,7 +22733,7 @@ index e909e0a56..f1139e207 100644
  
        if (name && (vkey == VK_SHIFT || vkey == VK_CONTROL || vkey == VK_MENU))
 diff --git a/dlls/winex11.drv/mouse.c b/dlls/winex11.drv/mouse.c
-index 7e4d6f9b0..b39032375 100644
+index 7e4d6f9b031221b09869d3c5bf3bf0eccfc36962..b39032375001dcf0e8d38f0b8992d225ac5b07c4 100644
 --- a/dlls/winex11.drv/mouse.c
 +++ b/dlls/winex11.drv/mouse.c
 @@ -1717,6 +1717,7 @@ static BOOL X11DRV_TouchEvent( HWND hwnd, XGenericEventCookie *xev )
@@ -22803,7 +22745,7 @@ index 7e4d6f9b0..b39032375 100644
      int event, error;
      void *libxi_handle = dlopen( SONAME_LIBXI, RTLD_NOW );
 diff --git a/dlls/winex11.drv/opengl.c b/dlls/winex11.drv/opengl.c
-index 9771b4d33..f49f4a8be 100644
+index 9771b4d33fa8be062807220dbccb7b3a1e06fe45..f49f4a8be787129e890c2a7540bbd5d70c987209 100644
 --- a/dlls/winex11.drv/opengl.c
 +++ b/dlls/winex11.drv/opengl.c
 @@ -399,6 +399,8 @@ static BOOL X11DRV_WineGL_InitOpenglInfo(void)
@@ -22816,7 +22758,7 @@ index 9771b4d33..f49f4a8be 100644
      pglXQueryVersion(gdi_display, &glxVersion[0], &glxVersion[1]);
  
 diff --git a/dlls/winex11.drv/vulkan.c b/dlls/winex11.drv/vulkan.c
-index 1c1b9cf3b..f14cd3732 100644
+index 1c1b9cf3ba1c19d5c855c27990cbc8a2c42dacad..f14cd373236da7559d373afa2d6c1d791398414d 100644
 --- a/dlls/winex11.drv/vulkan.c
 +++ b/dlls/winex11.drv/vulkan.c
 @@ -69,6 +69,13 @@ static VkBool32 X11DRV_get_physical_device_presentation_support( struct vulkan_p
@@ -22834,7 +22776,7 @@ index 1c1b9cf3b..f14cd3732 100644
                                                                        default_visual.visual->visualid );
  }
 diff --git a/dlls/winex11.drv/window.c b/dlls/winex11.drv/window.c
-index cbc6f0c5b..17dece71c 100644
+index cbc6f0c5b4dc6078e08460554650580bb0470ac2..17dece71ce3acaf45927b2845e708af2c7d8b731 100644
 --- a/dlls/winex11.drv/window.c
 +++ b/dlls/winex11.drv/window.c
 @@ -1133,7 +1133,8 @@ static void set_style_hints( struct x11drv_win_data *data, DWORD style, DWORD ex
@@ -22920,7 +22862,7 @@ index cbc6f0c5b..17dece71c 100644
      release_win_data( data );
      if (thread_data->clip_window) XReparentWindow( display, thread_data->clip_window, win, 0, 0 );
 diff --git a/dlls/winex11.drv/x11drv.h b/dlls/winex11.drv/x11drv.h
-index 9ed169996..ebe880fe9 100644
+index 9ed169996ce84f6201dbf57508f6cdfeb909f1fc..ebe880fe9532dd0f839c07e8e276a63a0019b968 100644
 --- a/dlls/winex11.drv/x11drv.h
 +++ b/dlls/winex11.drv/x11drv.h
 @@ -485,6 +485,9 @@ extern BOOL use_system_cursors;
@@ -22954,7 +22896,7 @@ index 9ed169996..ebe880fe9 100644
  extern void attach_client_window( struct x11drv_win_data *data, Window client_window );
  extern void destroy_client_window( HWND hwnd, Window client_window );
 diff --git a/dlls/winex11.drv/x11drv_main.c b/dlls/winex11.drv/x11drv_main.c
-index 39b23ffe0..3ae013545 100644
+index 39b23ffe0ec86a4e3220f79fe3008b6f67cee4f3..3ae01354588d5a69c234d1226f9a97e738dddb05 100644
 --- a/dlls/winex11.drv/x11drv_main.c
 +++ b/dlls/winex11.drv/x11drv_main.c
 @@ -36,7 +36,6 @@
@@ -23018,7 +22960,7 @@ index 39b23ffe0..3ae013545 100644
  
      set_queue_display_fd( data->display );
 diff --git a/dlls/winex11.drv/xvidmode.c b/dlls/winex11.drv/xvidmode.c
-index 23fd09a08..64fd586b4 100644
+index 23fd09a08f09872dbcbb132aa0e1e908d6768445..64fd586b4d3d2eb60b72a9fe16dd2f3d1ffffc9a 100644
 --- a/dlls/winex11.drv/xvidmode.c
 +++ b/dlls/winex11.drv/xvidmode.c
 @@ -233,7 +233,7 @@ void X11DRV_XF86VM_Init(void)
@@ -23041,7 +22983,7 @@ index 23fd09a08..64fd586b4 100644
    xf86vm_handler.priority = 100;
    xf86vm_handler.get_id = xf86vm_get_id;
 diff --git a/dlls/winmm/lolvldrv.c b/dlls/winmm/lolvldrv.c
-index b0283e7db..e1c44cde9 100644
+index b0283e7db8f20b283d37bf7c15c19f338e0f6079..e1c44cde97ec1d42de9b73d75c7a7dd5dcc3e6d1 100644
 --- a/dlls/winmm/lolvldrv.c
 +++ b/dlls/winmm/lolvldrv.c
 @@ -356,12 +356,17 @@ static  BOOL	MMDRV_InitPerType(LPWINE_MM_DRIVER lpDrv, UINT type, UINT wMsg)
@@ -23085,7 +23027,7 @@ index b0283e7db..e1c44cde9 100644
      for (i = k = 0; i <= MMDrvsHi; i++) {
  	while (MMDrvs[i].parts[type].nIDMin <= k && k < MMDrvs[i].parts[type].nIDMax) {
 diff --git a/dlls/wow64win/user.c b/dlls/wow64win/user.c
-index 5506c9fc5..4bed2bca0 100644
+index 5506c9fc5b03ab7a991c0dfd6b7056bba907c408..4bed2bca086b7163808cd993ab8b5de79e513607 100644
 --- a/dlls/wow64win/user.c
 +++ b/dlls/wow64win/user.c
 @@ -21,6 +21,7 @@
@@ -29015,7 +28957,7 @@ z0O~`8d}zOuG(>g)dZ~R*@*YLbTHnb-G*}zCQsgUJ3{oKFD|(xSgMoUa<6S9hDVq);
 V-8z=~7W-29AZz2-V8XxM{tuYkl_~%L
 
 diff --git a/include/ddk/ntifs.h b/include/ddk/ntifs.h
-index bca17029b..dd54ae3e8 100644
+index bca17029be0f6b99064df77ecf91cc4894d1564f..dd54ae3e8b039491d60a8aacf535e1445f79d978 100644
 --- a/include/ddk/ntifs.h
 +++ b/include/ddk/ntifs.h
 @@ -183,6 +183,11 @@ typedef struct _REPARSE_DATA_BUFFER
@@ -29031,7 +28973,7 @@ index bca17029b..dd54ae3e8 100644
          {
              UCHAR DataBuffer[1];
 diff --git a/include/ntuser.h b/include/ntuser.h
-index be41b33ad..8563ebbb8 100644
+index be41b33adfd79cf69d7735987af4be593eba4250..8563ebbb8c143022bb95f4776b11ac1505e984b7 100644
 --- a/include/ntuser.h
 +++ b/include/ntuser.h
 @@ -959,7 +959,6 @@ W32KAPI ATOM    WINAPI NtUserRegisterClassExWOW( const WNDCLASSEXW *wc, UNICODE_
@@ -29043,7 +28985,7 @@ index be41b33ad..8563ebbb8 100644
  W32KAPI INT     WINAPI NtUserReleaseDC( HWND hwnd, HDC hdc );
  W32KAPI BOOL    WINAPI NtUserRemoveClipboardFormatListener( HWND hwnd );
 diff --git a/loader/main.c b/loader/main.c
-index f8b113f31..7e7c541a5 100644
+index f8b113f3136f78e6369d66b2043f92db8676cef7..7e7c541a522594ffc66089460e3fdce11b59921b 100644
 --- a/loader/main.c
 +++ b/loader/main.c
 @@ -31,6 +31,8 @@
@@ -29088,7 +29030,7 @@ index f8b113f31..7e7c541a5 100644
  
      if ((handle = try_dlopen( get_self_exe() )) ||
 diff --git a/programs/cmd/directory.c b/programs/cmd/directory.c
-index abc0f0dc8..5e50252d3 100644
+index abc0f0dc83ced61e3bdcbda4970edf873a26447f..5e50252d348db3f62b0b84ed7b3d7bb2b3df42f8 100644
 --- a/programs/cmd/directory.c
 +++ b/programs/cmd/directory.c
 @@ -26,6 +26,8 @@
@@ -29167,7 +29109,7 @@ index abc0f0dc8..5e50252d3 100644
          dir_count++;
  
 diff --git a/programs/explorer/desktop.c b/programs/explorer/desktop.c
-index ce70c5dd7..6ef7cf5a4 100644
+index ce70c5dd79dd41836deb5014c4fcf3d48b04f55d..6ef7cf5a45fb25ac78470b28c65bb383725b9b4d 100644
 --- a/programs/explorer/desktop.c
 +++ b/programs/explorer/desktop.c
 @@ -43,6 +43,7 @@ WINE_DEFAULT_DEBUG_CHANNEL(explorer);
@@ -29297,7 +29239,7 @@ index ce70c5dd7..6ef7cf5a4 100644
          SetWindowPos( hwnd, 0, GetSystemMetrics(SM_XVIRTUALSCREEN), GetSystemMetrics(SM_YVIRTUALSCREEN),
                        GetSystemMetrics(SM_CXVIRTUALSCREEN), GetSystemMetrics(SM_CYVIRTUALSCREEN),
 diff --git a/programs/explorer/startmenu.c b/programs/explorer/startmenu.c
-index 33a0d0c0c..bccbf9024 100644
+index 33a0d0c0c9c52cba561d04dc52257cc1d103e1bf..bccbf90249fe53e321d14705c2b6374501ee03cb 100644
 --- a/programs/explorer/startmenu.c
 +++ b/programs/explorer/startmenu.c
 @@ -34,8 +34,6 @@ struct menu_item
@@ -29584,7 +29526,7 @@ index 33a0d0c0c..bccbf9024 100644
  
      GetWindowRect(hwnd, &rc);
 diff --git a/programs/explorer/systray.c b/programs/explorer/systray.c
-index 69d3ec61b..01fae1ae8 100644
+index 69d3ec61b6a02cb70a13fd812600033dd6a91997..01fae1ae8ffa7e20f6d5e1cd664f3c8831bbb0da 100644
 --- a/programs/explorer/systray.c
 +++ b/programs/explorer/systray.c
 @@ -121,6 +121,7 @@ static WCHAR start_label[50];
@@ -29624,7 +29566,7 @@ index 69d3ec61b..01fae1ae8 100644
  
      add_taskbar_button( 0 );
 diff --git a/programs/winebrowser/main.c b/programs/winebrowser/main.c
-index 9e00b1112..1a95fd5b6 100644
+index 9e00b11127496e9d01b31cbe1741db6f504a7512..1a95fd5b6914ef0726bf750c08dc79f98e23a613 100644
 --- a/programs/winebrowser/main.c
 +++ b/programs/winebrowser/main.c
 @@ -1,5 +1,5 @@
@@ -29775,7 +29717,7 @@ index 9e00b1112..1a95fd5b6 100644
      return launch_app( mailers, url );
  }
 diff --git a/programs/winemenubuilder/winemenubuilder.c b/programs/winemenubuilder/winemenubuilder.c
-index 553a47b88..d0d1421ae 100644
+index 553a47b88067dc46a1f738aeda1dc7e60ebc6efb..d0d1421aeb65f7e61ecd29f8197d5e2c280b7c0f 100644
 --- a/programs/winemenubuilder/winemenubuilder.c
 +++ b/programs/winemenubuilder/winemenubuilder.c
 @@ -2476,7 +2476,7 @@ static BOOL WaitForParentProcess( void )
@@ -29788,7 +29730,7 @@ index 553a47b88..d0d1421ae 100644
      else
          WINE_ERR("Unable to wait for parent process, error %ld\n", GetLastError());
 diff --git a/server/unicode.c b/server/unicode.c
-index bb39b55e5..33c1a5a64 100644
+index bb39b55e50c3180867463b0edff548c6a1a9d793..33c1a5a641a674f42fe7ccc1429e9501a4331463 100644
 --- a/server/unicode.c
 +++ b/server/unicode.c
 @@ -327,6 +327,8 @@ static char *get_nls_dir(void)
