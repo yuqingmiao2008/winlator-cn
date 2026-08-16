@@ -97,6 +97,21 @@ jobs:
           key: wine-${{ env.WINE_TAG }}-r1-${{ hashFiles('wine/winlator-custom-wine11.patch') }}
           fail-on-cache-miss: true
 
+      - name: strip Wine 调试符号 (缓存产物瘦身)
+        # 旧缓存中的 wine 产物未 strip (rootfs.tzst 因此膨胀到 404MB)。
+        # 本步骤对缓存产物原地 strip, 无需重编 Wine (~55min) 即可大幅缩减 APK 体积。
+        run: |
+          set -euxo pipefail
+          sudo apt-get install -y -qq file binutils >/dev/null
+          before=$(du -sm wine-staging/opt/wine | cut -f1)
+          find wine-staging/opt/wine -type f -exec file {} + 2>/dev/null \
+            | grep -F ELF | cut -d: -f1 | xargs -r strip --strip-unneeded 2>/dev/null || true
+          after=$(du -sm wine-staging/opt/wine | cut -f1)
+          echo "wine 体积: ${before}MB -> ${after}MB"
+          # 校验关键 ELF 未被破坏
+          readelf -h wine-staging/opt/wine/bin/wine >/dev/null
+          readelf -d wine-staging/opt/wine/lib/wine/x86_64-unix/ntdll.so >/dev/null
+
       # ---------------------------------------------------------------
       # 阶段 2: rootfs 注入 Wine 11 + 中文支持
       # ---------------------------------------------------------------
