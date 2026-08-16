@@ -40,12 +40,22 @@ import os, re, struct, sys
 
 work = sys.argv[1]
 rootfs_libs = set()
-for d in ("usr/lib", "usr/lib/x86_64-linux-gnu", "lib", "opt/wine/lib", "opt/wine/bin"):
+# 注意: opt/wine/lib/wine/x86_64-unix 是 Wine 内部 unix 库目录, 各 .so 之间的
+# 互相依赖 (如 opencl.so -> ntdll.so, opengl32.so -> win32u.so) 由 wine
+# preloader 在进程内按内部路径解析, 必须计入可用集合
+for d in ("usr/lib", "usr/lib/x86_64-linux-gnu", "lib", "opt/wine/lib",
+          "opt/wine/bin", "opt/wine/lib/wine/x86_64-unix",
+          "opt/wine/lib/wine/i386-unix"):
     p = os.path.join(work, d)
     if not os.path.isdir(p):
         continue
     for f in os.listdir(p):
         rootfs_libs.add(f)
+
+# 与上游 Winlator (Wine 10.10) rootfs 行为保持一致的白名单:
+#  - libOpenCL.so.1: 上游 opencl.so 同样 NEEDED 它但 rootfs 并不携带,
+#    OpenCL 在 Winlator 上本就不可用 (GPU 走 Turnip/VirGL), 保留 dll 仅供兜底
+whitelist = {"libOpenCL.so.1"}
 
 def needed(path):
     try:
@@ -100,8 +110,14 @@ def needed(path):
                         (d_tag,) = struct.unpack_from(tag_size, data, doff)
                         if d_tag == 1:  # DT_NEEDED
                             (d_val,) = struct.unpack_from(fmt, data, doff + 8)
+                            if d_val >= len(strdata):
+                                continue
                             end = strdata.find(b"\x00", d_val)
-                            needed.append(strdata[d_val:end].decode())
+                            if end < 0:
+                                continue
+                            name = strdata[d_val:end].decode(errors="replace")
+                            if name:
+                                needed.append(name)
                     break
         return needed
     except Exception:
@@ -112,8 +128,9 @@ for root, dirs, files in os.walk(os.path.join(work, "opt", "wine")):
     for f in files:
         p = os.path.join(root, f)
         for n in needed(p):
-            if n not in rootfs_libs and n != "ld-linux-x86-64.so.2":
-                missing.setdefault(n, set()).add(os.path.relpath(p, work))
+            if n in whitelist or n in rootfs_libs or n == "ld-linux-x86-64.so.2":
+                continue
+            missing.setdefault(n, set()).add(os.path.relpath(p, work))
 
 if missing:
     print("!!! 以下 NEEDED 库在 rootfs 中不存在 (box64 无法解析):")
