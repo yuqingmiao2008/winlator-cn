@@ -18,8 +18,13 @@ env:
   WINE_TAG: ${{ github.event.inputs.wine_tag || 'wine-11.15' }}
 
 jobs:
-  build:
-    name: Wine 11 构建 + rootfs 中文化 + APK
+  # =====================================================================
+  # Job 1: Wine 11 编译 (Winlator 定制补丁, 新 WoW64 模式)
+  # 独立成 job: 只要本 job 成功, wine-staging 即写入 Actions 缓存,
+  # 后续打包阶段失败重试时无需再花 ~55 分钟重编 Wine。
+  # =====================================================================
+  wine-build:
+    name: Wine 11 编译
     runs-on: ubuntu-24.04
     timeout-minutes: 330
 
@@ -33,9 +38,6 @@ jobs:
           df -h / | tail -1
           nproc
 
-      # ---------------------------------------------------------------
-      # 阶段 1: Wine 11 (Winlator 定制补丁, 新 WoW64) — 带 Actions 缓存
-      # ---------------------------------------------------------------
       - name: Wine 构建缓存
         id: wine-cache
         uses: actions/cache@v4
@@ -72,6 +74,28 @@ jobs:
             tgt=$(readlink "$l"); rm -f "$l"; cp -a "$tgt" "$l" || true
           done
           du -sh "$GITHUB_WORKSPACE/wine-staging"
+          ls "$GITHUB_WORKSPACE/wine-staging/opt/wine/bin/wineserver" >/dev/null
+
+  # =====================================================================
+  # Job 2: rootfs 注入 (Wine 11 + 中文支持) -> APK -> 签名 -> 发行
+  # =====================================================================
+  package:
+    name: rootfs 中文化 + APK
+    needs: wine-build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+
+    steps:
+      - name: Checkout 仓库
+        uses: actions/checkout@v4
+
+      - name: 恢复 Wine 11 构建缓存
+        id: wine-cache
+        uses: actions/cache@v4
+        with:
+          path: wine-staging
+          key: wine-${{ env.WINE_TAG }}-r1-${{ hashFiles('wine/winlator-custom-wine11.patch') }}
+          fail-on-cache-miss: true
 
       # ---------------------------------------------------------------
       # 阶段 2: rootfs 注入 Wine 11 + 中文支持
@@ -151,7 +175,7 @@ jobs:
           if-no-files-found: error
 
       # ---------------------------------------------------------------
-      # 阶段 4: 发行 (仅 tag 推送或手动触发时)
+      # 阶段 4: 发行 (仅 tag 推送时)
       # ---------------------------------------------------------------
       - name: 创建 GitHub Release 并上传 APK
         if: startsWith(github.ref, 'refs/tags/v')

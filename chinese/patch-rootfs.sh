@@ -154,7 +154,9 @@ ls "$WORK/usr/lib/locale/" | grep zh || true
 
 echo "==> [6/8] X11 zh_CN locale"
 if [ -d /usr/share/X11/locale/zh_CN.UTF-8 ]; then
+    mkdir -p "$WORK/usr/share/X11/locale"
     cp -a /usr/share/X11/locale/zh_CN.UTF-8 "$WORK/usr/share/X11/locale/"
+    touch "$WORK/usr/share/X11/locale/locale.dir"
     grep -q "^zh_CN.UTF-8" "$WORK/usr/share/X11/locale/locale.dir" || \
         printf "zh_CN.UTF-8\t\tzh_CN.UTF-8\nzh_CN\t\t\tzh_CN.UTF-8\n" >> "$WORK/usr/share/X11/locale/locale.dir"
 else
@@ -170,7 +172,8 @@ if [ -f "$CP/.wine/system.reg" ]; then
 fi
 mkdir -p "$CP/.wine/drive_c/windows/Fonts"
 cp "$CHINESE/fonts/NotoSansCJKsc-Regular.otf" "$CHINESE/fonts/NotoSansCJKsc-Bold.otf" "$CP/.wine/drive_c/windows/Fonts/"
-( cd "$CP" && tar -I zstd -cf "$ASSETS/container_pattern.tzst.new" . )
+( cd "$CP" && tar --numeric-owner --owner=0 --group=0 --sort=name \
+    -cf "$ASSETS/container_pattern.tzst.new" --use-compress-program="zstd -q -T0" . )
 mv "$ASSETS/container_pattern.tzst.new" "$ASSETS/container_pattern.tzst"
 
 # 7.2 rootfs_patches.tzst
@@ -181,7 +184,8 @@ if [ -f "$RP/home/xuser/.wine/system.reg" ]; then
 fi
 mkdir -p "$RP/home/xuser/.wine/drive_c/windows/Fonts"
 cp "$CHINESE/fonts/NotoSansCJKsc-Regular.otf" "$CHINESE/fonts/NotoSansCJKsc-Bold.otf" "$RP/home/xuser/.wine/drive_c/windows/Fonts/"
-( cd "$RP" && tar -I zstd -cf "$ASSETS/rootfs_patches.tzst.new" . )
+( cd "$RP" && tar --numeric-owner --owner=0 --group=0 --sort=name \
+    -cf "$ASSETS/rootfs_patches.tzst.new" --use-compress-program="zstd -q -T0" . )
 mv "$ASSETS/rootfs_patches.tzst.new" "$ASSETS/rootfs_patches.tzst"
 
 echo "==> [8/8] 重新打包 rootfs.tzst"
