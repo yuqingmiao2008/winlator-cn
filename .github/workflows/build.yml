@@ -98,19 +98,27 @@ jobs:
           fail-on-cache-miss: true
 
       - name: strip Wine 调试符号 (缓存产物瘦身)
-        # 旧缓存中的 wine 产物未 strip (rootfs.tzst 因此膨胀到 404MB)。
-        # 本步骤对缓存产物原地 strip, 无需重编 Wine (~55min) 即可大幅缩减 APK 体积。
+        # 旧缓存中的 wine 产物未 strip (rootfs.tzst 因此膨胀到 ~400MB)。
+        # ELF 用原生 strip; PE 侧 (mingw 编译的 i386/x86_64 DLL, 体积大头) 用
+        # mingw strip。原地处理, 无需重编 Wine (~55min) 即可大幅缩减 APK 体积。
         run: |
           set -euxo pipefail
-          sudo apt-get install -y -qq file binutils >/dev/null
+          sudo apt-get install -y -qq file binutils binutils-mingw-w64-x86-64 >/dev/null
           before=$(du -sm wine-staging/opt/wine | cut -f1)
-          find wine-staging/opt/wine -type f -exec file {} + 2>/dev/null \
-            | grep -F ELF | cut -d: -f1 | xargs -r strip --strip-unneeded 2>/dev/null || true
+          FILEMAP="$(mktemp)"
+          find wine-staging/opt/wine -type f -exec file {} + >"$FILEMAP" 2>/dev/null || true
+          grep -F 'ELF' "$FILEMAP" | cut -d: -f1 \
+            | xargs -r -n 50 strip --strip-unneeded 2>/dev/null || true
+          grep -E 'PE32|MS Windows' "$FILEMAP" | cut -d: -f1 \
+            | xargs -r -n 50 x86_64-w64-mingw32-strip --strip-unneeded 2>/dev/null || true
+          rm -f "$FILEMAP"
           after=$(du -sm wine-staging/opt/wine | cut -f1)
           echo "wine 体积: ${before}MB -> ${after}MB"
-          # 校验关键 ELF 未被破坏
+          # 校验关键产物未被破坏 (unix ELF 与 PE DLL 各抽一个)
           readelf -h wine-staging/opt/wine/bin/wine >/dev/null
           readelf -d wine-staging/opt/wine/lib/wine/x86_64-unix/ntdll.so >/dev/null
+          x86_64-w64-mingw32-objdump -h \
+            wine-staging/opt/wine/lib/wine/x86_64-windows/kernel32.dll >/dev/null
 
       # ---------------------------------------------------------------
       # 阶段 2: rootfs 注入 Wine 11 + 中文支持

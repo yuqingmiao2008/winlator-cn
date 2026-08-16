@@ -62,16 +62,17 @@ echo "==> [5/5] 安装到 staging: $OUT"
 rm -rf "$OUT"
 make install DESTDIR="$OUT"
 
-echo "==> [6/6] strip 调试符号 (Wine 11 未 strip 产物 ~1.5GB, strip 后大幅缩减)"
-# make install 产出带完整调试符号的 ELF; Winlator 上游 rootfs 同样是 stripped 的。
-# strip --strip-unneeded 保留动态符号表, 不影响 box64 dynarec 与运行时链接。
-if command -v file >/dev/null; then
-    find "$OUT/opt/wine" -type f -exec file {} + 2>/dev/null \
-        | grep -F ELF | cut -d: -f1 | xargs -r strip --strip-unneeded 2>/dev/null || true
-else
-    find "$OUT/opt/wine" -type f \( -name "*.so*" -o -name "wine*" -o -name "*.exe.so" \) \
-        -exec strip --strip-unneeded {} 2>/dev/null \; || true
-fi
+echo "==> [6/6] strip 调试符号 (未 strip 产物 ~1.8GB, strip 后大幅缩减)"
+# make install 产物带完整调试符号: unix 侧为 ELF, PE 侧为 mingw 编译的
+# PE32/PE32+ (i386+x86_64 双架构, 数量占大头)。两类分别用对应 binutils strip。
+# --strip-unneeded 保留动态符号表, 不影响 box64 dynarec 与运行时加载。
+FILEMAP="$(mktemp)"
+find "$OUT/opt/wine" -type f -exec file {} + >"$FILEMAP" 2>/dev/null || true
+grep -F 'ELF' "$FILEMAP" | cut -d: -f1 \
+    | xargs -r -n 50 strip --strip-unneeded 2>/dev/null || true
+grep -E 'PE32|MS Windows' "$FILEMAP" | cut -d: -f1 \
+    | xargs -r -n 50 x86_64-w64-mingw32-strip --strip-unneeded 2>/dev/null || true
+rm -f "$FILEMAP"
 echo "--- strip 后体积 ---"
 du -sh "$OUT/opt/wine"
 
