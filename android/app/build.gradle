@@ -34,6 +34,33 @@ android {
             path 'src/main/cpp/CMakeLists.txt'
         }
     }
+
+    // midihandler 以 CMake IMPORTED 目标方式链接 jniLibs 中的预编译库,
+    // AGP 会同时从 jniLibs 与 CMake 产物打包同名 .so (内容完全相同,
+    // IMPORTED_LOCATION 直接指向 jniLibs 文件), 用 pickFirsts 去重
+    packagingOptions {
+        pickFirsts += [
+            'lib/arm64-v8a/libFLAC.so',
+            'lib/arm64-v8a/libc++_shared.so',
+            'lib/arm64-v8a/libfluidsynth.so',
+            'lib/arm64-v8a/libfluidsynth-assetloader.so',
+            'lib/arm64-v8a/libgio-2.0.so',
+            'lib/arm64-v8a/libglib-2.0.so',
+            'lib/arm64-v8a/libgmodule-2.0.so',
+            'lib/arm64-v8a/libgobject-2.0.so',
+            'lib/arm64-v8a/libgthread-2.0.so',
+            'lib/arm64-v8a/libinstpatch-1.0.so',
+            'lib/arm64-v8a/liboboe.so',
+            'lib/arm64-v8a/libogg.so',
+            'lib/arm64-v8a/libopus.so',
+            'lib/arm64-v8a/libpcre.so',
+            'lib/arm64-v8a/libpcreposix.so',
+            'lib/arm64-v8a/libsndfile.so',
+            'lib/arm64-v8a/libvorbis.so',
+            'lib/arm64-v8a/libvorbisenc.so',
+            'lib/arm64-v8a/libvorbisfile.so'
+        ]
+    }
 }
 
 dependencies {
