@@ -173,7 +173,8 @@ jobs:
           set -euxo pipefail
           APK_IN="android/app/build/outputs/apk/debug/app-debug.apk"
           test -f "$APK_IN"
-          OUT="Winlator_CN_Wine11_v${GITHUB_REF_NAME##*/v}.apk"
+          # 去掉 tag 前缀 v: v1.0.0 -> 1.0.0 (main 分支构建时 REF_NAME=main, 保持原样)
+          OUT="Winlator_CN_Wine11_${GITHUB_REF_NAME#v}.apk"
           if [ -n "$KEYSTORE_B64" ]; then
             echo "$KEYSTORE_B64" | base64 -d > /tmp/release.keystore
             BT="$ANDROID_HOME/build-tools/34.0.0"
