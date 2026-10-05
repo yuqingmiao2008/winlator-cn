@@ -43,3 +43,10 @@ chinese/    rootfs 中文化脚本、fontconfig、注册表补丁、Noto CJK 字
 - [Box64](https://github.com/ptitSeb/box64) by ptitSeb
 
 本项目同样以 GPLv3 发布。
+
+最后感谢这些项目的 contributors 以及我这个项目的皇帝的 contributors。
+stars.
+
+## 太让我震惊了。 
+这坨 glm5.2 和 glm5.3 以及 trae共同手搓的屎山居然有 10 个人 star。
+感谢各位，本人目前江苏高三生，开发时间不多，有兴趣的话关注社交媒体
