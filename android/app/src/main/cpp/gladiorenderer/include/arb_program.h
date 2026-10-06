@@ -15,6 +15,7 @@ typedef struct ARBVariable {
     int type;
     int arraySize;
     ArrayList uniforms;
+    char* value;
 } ARBVariable;
 
 typedef struct ARBProgram {
@@ -24,7 +25,7 @@ typedef struct ARBProgram {
     GLuint threadId;
     char* shaderCode;
     char* asmSource;
-    char samplerTypes[MAX_TEXCOORDS];
+    char samplerTypes[MAX_TEXTURES];
     ArrayList variables;
     ShaderMaterial* material;
     uint8_t numTextures;
@@ -39,7 +40,7 @@ extern void ARBProgram_delete(GLuint programId);
 extern void ARBProgram_setEnvParameter(GLenum target, GLuint index, GLfloat x, GLfloat y, GLfloat z, GLfloat w);
 extern void ARBProgram_setLocalParameter(ARBProgram* program, GLuint index, GLfloat x, GLfloat y, GLfloat z, GLfloat w);
 extern void ARBProgram_onDestroy(GLClientState* clientState);
-extern bool ARBProgram_isActive();
+extern bool ARBProgram_isActive(GLenum target);
 
 #define MARK_END_LINE(s) \
     int lineEnd = -1; \

@@ -188,7 +188,6 @@
     <string name="removing_files">正在删除文件…</string>
     <string name="disable_mouse_input">禁用鼠标输入</string>
     <string name="move_cursor_to_touchpoint">光标跟随触点移动</string>
-    <string name="sync_every_frame">逐帧同步</string>
     <string name="dpi_font_size">DPI（字体大小）</string>
     <string name="gamepad_model">手柄型号</string>
     <string name="file_manager">文件管理器</string>
@@ -290,4 +289,16 @@
     <string name="full">完整</string>
     <string name="renderer">渲染器</string>
     <string name="default_no_override">默认（无覆盖）</string>
+
+    <!-- 以下为同步上游 winlator-app a030f55 新增条目的中文翻译 -->
+    <string name="enable_background_protection">启用后台保护</string>
+    <string name="enable_background_protection_tooltip">在后台或设备锁屏时保持容器存活，但其中的进程会被暂停。</string>
+    <string name="enable_background_wakelock">设备锁屏时启用唤醒锁</string>
+    <string name="enable_background_wakelock_tooltip">避免解锁设备后返回时出现问题。</string>
+    <string name="fgs_notification_channel_desc">让 Winlator 在后台保持运行，避免 Wine 会话被 Android 的后台进程管理中断。</string>
+    <string name="fgs_notification_content_container_background">容器会话正在后台运行</string>
+    <string name="fgs_notification_content_container_foreground">有一个容器会话正在运行</string>
+    <string name="fgs_notification_content_else">Winlator 正在后台运行</string>
+    <string name="save_mem_on_run_from_steam">从 Steam 运行时节省内存</string>
+    <string name="present_mode">呈现模式</string>
 </resources>

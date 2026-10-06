@@ -28,61 +28,52 @@ static void getWindowSize(JMethods* jmethods, int windowId, short* outWidth, sho
     (*jmethods->env)->ReleaseShortArrayElements(jmethods->env, windowSize, windowSizePtr, JNI_ABORT);
 }
 
-static void createDisplayBuffers(GLContext* context) {
-    for (int i = 0; i < ARRAY_SIZE(currentRenderer->displayBuffers); i++) {
-        currentRenderer->displayBuffers[i] = GLFramebuffer_create();
-        GLFramebuffer_bind(GL_FRAMEBUFFER, currentRenderer->displayBuffers[i]);
-        GLFramebuffer_setAttachment(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, context->displayBufAttachments[i].texture, 0);
-        GLFramebuffer_setAttachment(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, context->displayBufAttachments[i].renderbuffer, 0);
+static void createDisplayBuffer(GLContext* context) {
+    currentRenderer->displayBuffer = GLFramebuffer_create();
+    GLFramebuffer_bind(GL_FRAMEBUFFER, currentRenderer->displayBuffer);
+    GLFramebuffer_setAttachment(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, context->displayBufAttachment.texture, 0);
+    GLFramebuffer_setAttachment(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, context->displayBufAttachment.renderbuffer, 0);
+}
+
+static void destroyDisplayBuffer() {
+    if (currentRenderer && currentRenderer->displayBuffer > 0) {
+        GLFramebuffer_delete(currentRenderer->displayBuffer);
+        currentRenderer->displayBuffer = 0;
     }
 }
 
-static void destroyDisplayBuffers() {
-    if (!currentRenderer) return;
-    for (int i = 0; i < ARRAY_SIZE(currentRenderer->displayBuffers); i++) {
-        if (currentRenderer->displayBuffers[i] > 0) {
-            GLFramebuffer_delete(currentRenderer->displayBuffers[i]);
-            currentRenderer->displayBuffers[i] = 0;
-        }
-    }
-}
-
-static void createDisplayBufAttachments(GLContext* context) {
+static void createDisplayBufAttachment(GLContext* context) {
     short width = currentRenderer->displaySize[0];
     short height = currentRenderer->displaySize[1];
 
-    for (int i = 0; i < ARRAY_SIZE(context->displayBufAttachments); i++) {
-        if (context->displayBufAttachments[i].texture == 0) {
-            glGenTextures(1, &context->displayBufAttachments[i].texture);
-            glBindTexture(GL_TEXTURE_2D, context->displayBufAttachments[i].texture);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-            glBindTexture(GL_TEXTURE_2D, 0);
-        }
+    if (context->displayBufAttachment.texture == 0) {
+        glGenTextures(1, &context->displayBufAttachment.texture);
+        glBindTexture(GL_TEXTURE_2D, context->displayBufAttachment.texture);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTexImage2D(GL_TEXTURE_2D, 0, PREFERRED_FRAMEBUFFER_FORMAT, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+        glBindTexture(GL_TEXTURE_2D, 0);
+    }
 
-        if (context->displayBufAttachments[i].renderbuffer == 0) {
-            glGenRenderbuffers(1, &context->displayBufAttachments[i].renderbuffer);
-            glBindRenderbuffer(GL_RENDERBUFFER, context->displayBufAttachments[i].renderbuffer);
-            glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height);
-            glBindRenderbuffer(GL_RENDERBUFFER, 0);
-        }
+    if (context->displayBufAttachment.renderbuffer == 0) {
+        glGenRenderbuffers(1, &context->displayBufAttachment.renderbuffer);
+        glBindRenderbuffer(GL_RENDERBUFFER, context->displayBufAttachment.renderbuffer);
+        glRenderbufferStorage(GL_RENDERBUFFER, PREFERRED_RENDERBUFFER_FORMAT, width, height);
+        glBindRenderbuffer(GL_RENDERBUFFER, 0);
     }
 }
 
-static void destroyDisplayBufAttachments(GLContext* context) {
-    for (int i = 0; i < ARRAY_SIZE(context->displayBufAttachments); i++) {
-        if (context->displayBufAttachments[i].texture > 0) {
-            glDeleteTextures(1, &context->displayBufAttachments[i].texture);
-            context->displayBufAttachments[i].texture = 0;
-        }
+static void destroyDisplayBufAttachment(GLContext* context) {
+    if (context->displayBufAttachment.texture > 0) {
+        glDeleteTextures(1, &context->displayBufAttachment.texture);
+        context->displayBufAttachment.texture = 0;
+    }
 
-        if (context->displayBufAttachments[i].renderbuffer > 0) {
-            glDeleteRenderbuffers(1, &context->displayBufAttachments[i].renderbuffer);
-            context->displayBufAttachments[i].renderbuffer = 0;
-        }
+    if (context->displayBufAttachment.renderbuffer > 0) {
+        glDeleteRenderbuffers(1, &context->displayBufAttachment.renderbuffer);
+        context->displayBufAttachment.renderbuffer = 0;
     }
 }
 
@@ -90,9 +81,7 @@ static void setCurrentRenderWindow(GLContext* context, int windowId) {
     if (windowId == 0) return;
     JMethods* jmethods = &context->jmethods;
     (*jmethods->env)->CallVoidMethod(jmethods->env, jmethods->obj, jmethods->clearWindowContent, windowId);
-
-    bool hasDisplayBuffers = currentRenderer->displayBuffers[0] > 0 && currentRenderer->displayBuffers[1] > 0;
-    if (hasDisplayBuffers) return;
+    if (currentRenderer->displayBuffer > 0) return;
 
     short width;
     short height;
@@ -103,19 +92,18 @@ static void setCurrentRenderWindow(GLContext* context, int windowId) {
     currentRenderer->displaySize[0] = width;
     currentRenderer->displaySize[1] = height;
 
-    if (resized) destroyDisplayBufAttachments(context);
-    createDisplayBufAttachments(context);
-    createDisplayBuffers(context);
+    if (resized) destroyDisplayBufAttachment(context);
+    createDisplayBufAttachment(context);
+    createDisplayBuffer(context);
 
     ARRAYS_FILL(currentRenderer->clientState.framebuffer, MAX_FRAMEBUFFER_TARGETS, 0);
     GLRenderer_setDrawBuffer(currentRenderer, GL_BACK);
 
-    GLTexture* texture = currentRenderer->clientState.texture[indexOfGLTarget(GL_TEXTURE_2D)];
+    GLTexture* texture = GLTexture_getBound(GL_TEXTURE_2D);
     glBindTexture(GL_TEXTURE_2D, texture ? texture->id : 0);
 
     glViewport(0, 0, width, height);
     glScissor(0, 0, width, height);
-    currentRenderer->swapBuffers = true;
 }
 
 static void swapDisplayBuffers(GLContext* context, int drawableId) {
@@ -126,17 +114,12 @@ static void swapDisplayBuffers(GLContext* context, int drawableId) {
     JMethods* jmethods = &context->jmethods;
     bool result = (*jmethods->env)->CallBooleanMethod(jmethods->env, jmethods->obj, jmethods->updateWindowContent, drawableId, currentRenderer->displaySize[0], currentRenderer->displaySize[1], JNI_TRUE);
     if (result) {
-        if (currentRenderer->swapBuffers) {
-            SWAP(currentRenderer->displayBuffers[0], currentRenderer->displayBuffers[1], GLuint);
-            GLRenderer_setDrawBuffer(currentRenderer, GL_BACK);
-        }
-
-        GLTexture* texture = currentRenderer->clientState.texture[indexOfGLTarget(GL_TEXTURE_2D)];
+        GLTexture* texture = GLTexture_getBound(GL_TEXTURE_2D);
         glBindTexture(GL_TEXTURE_2D, texture ? texture->id : 0);
     }
     else {
-        destroyDisplayBuffers();
-        destroyDisplayBufAttachments(context);
+        destroyDisplayBuffer();
+        destroyDisplayBufAttachment(context);
         setCurrentRenderWindow(context, drawableId);
     }
 }
@@ -178,7 +161,7 @@ static void* requestHandlerThread(void* param) {
                 GLXContext* glxContext = (GLXContext*)(*jmethods->env)->CallLongMethod(jmethods->env, jmethods->obj, jmethods->getGLXContextPtr, context->clientFd, contextId);
 
                 if (glxContext && context->glxContext != glxContext) {
-                    destroyDisplayBuffers();
+                    destroyDisplayBuffer();
                     eglMakeCurrent(eglGetDisplay(EGL_DEFAULT_DISPLAY), EGL_NO_SURFACE, EGL_NO_SURFACE, glxContext->eglContext);
                     context->glxContext = glxContext;
                     currentRenderer = &glxContext->renderer;
@@ -218,8 +201,8 @@ static void* requestHandlerThread(void* param) {
 #endif
     }
 
-    destroyDisplayBuffers();
-    destroyDisplayBufAttachments(context);
+    destroyDisplayBuffer();
+    destroyDisplayBufAttachment(context);
     if (context->glxContext) {
         eglMakeCurrent(eglGetDisplay(EGL_DEFAULT_DISPLAY), EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
         context->glxContext = NULL;
@@ -519,7 +502,7 @@ bool readUnboundVertexArrays(GLContext* context, GLenum drawMode, int drawCount,
             }
 
             int location = i;
-            if (legacyEnabledWithProgram || ARBProgram_isActive()) {
+            if (legacyEnabledWithProgram || clientState->arbProgram[0]) {
                 if (clientState->program) {
                     location = clientState->program->location.attributes[i];
                 }

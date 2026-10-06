@@ -24,7 +24,7 @@ typedef struct ASMSource {
     ArrayMap variables;
     IntArray genericAttribs;
     GLenum type;
-    char samplerTypes[MAX_TEXCOORDS];
+    char samplerTypes[MAX_TEXTURES];
     uint8_t maxTexCoords;
 } ASMSource;
 
@@ -35,11 +35,13 @@ static struct ReservedGLName reservedGLNames[] = {
     {"program.local", "gd_ProgramLocal1", false, GL_FRAGMENT_PROGRAM_ARB},
     {"vertex.position", "gd_Vertex", false, GL_VERTEX_PROGRAM_ARB},
     {"vertex.normal", "vec4(gd_Normal, 1.0)", false, GL_VERTEX_PROGRAM_ARB},
+    {"vertex.color.primary", "gd_Color", false, GL_VERTEX_PROGRAM_ARB},
     {"vertex.color", "gd_Color", false, GL_VERTEX_PROGRAM_ARB},
     {"vertex.texcoord", "gd_MultiTexCoord", true, GL_VERTEX_PROGRAM_ARB},
     {"fragment.texcoord", "gd_TexCoord", true, GL_FRAGMENT_PROGRAM_ARB},
     {"texture", "gd_Texture", true, GL_FRAGMENT_PROGRAM_ARB},
     {"result.position", "gl_Position", false, GL_VERTEX_PROGRAM_ARB},
+    {"result.color.primary", "gd_FrontColor", false, GL_VERTEX_PROGRAM_ARB},
     {"result.color", "gd_FrontColor", false, GL_VERTEX_PROGRAM_ARB},
     {"result.color", "gd_FragColor", false, GL_FRAGMENT_PROGRAM_ARB},
     {"result.texcoord", "gd_TexCoord", true, GL_VERTEX_PROGRAM_ARB},
@@ -78,7 +80,7 @@ static ARBUniform* parseARBUniform(char* string) {
     return uniform;
 }
 
-static void extractInstOperands(char* line, ArrayList* operands) {
+static void extractInstOperands(char* line, ArrayList* result) {
     char* chr = line;
     int groupCount = 0;
     int nameStart = -1;
@@ -98,7 +100,7 @@ static void extractInstOperands(char* line, ArrayList* operands) {
         if (((*chr == ',' || *chr == '\0') && groupCount == 0) && nameStart != -1) {
             int nameEnd = chr - line;
             while (isspace(line[nameEnd-1])) nameEnd--;
-            ArrayList_add(operands, substr(line, nameStart, nameEnd - nameStart));
+            ArrayList_add(result, substr(line, nameStart, nameEnd - nameStart));
             nameStart = -1;
         }
 
@@ -107,7 +109,7 @@ static void extractInstOperands(char* line, ArrayList* operands) {
     }
 }
 
-static void extractArrayVariableParams(char* line, ArrayList* params) {
+static void extractArrayVariableParams(char* line, ArrayList* result) {
     char* chr = line;
     int groupCount = 0;
     int nameStart = -1;
@@ -127,7 +129,7 @@ static void extractArrayVariableParams(char* line, ArrayList* params) {
         if (((*chr == ',' && groupCount == 1) || (*chr == '}' && groupCount == 0)) && nameStart != -1) {
             int nameEnd = chr - line;
             while (isspace(line[nameEnd-1])) nameEnd--;
-            ArrayList_add(params, substr(line, nameStart, nameEnd - nameStart));
+            ArrayList_add(result, substr(line, nameStart, nameEnd - nameStart));
             nameStart = -1;
         }
 
@@ -204,6 +206,12 @@ static void parseInstOperand(char* operand, ASMSource* asmSource, ArrayBuffer* r
                     ArrayBuffer_putString(result, operand);
                     free(operand);
                 }
+                else if (variable->type == TYPE_QUALIFIER_OUTPUT ||
+                         variable->type == TYPE_QUALIFIER_ALIAS) {
+                    operand = strwrd_replace(variable->name, variable->value, strdup(operand));
+                    ArrayBuffer_putString(result, operand);
+                    free(operand);
+                }
                 else ArrayBuffer_putString(result, operand);
             }
             else {
@@ -263,11 +271,11 @@ static void parseDataTypeQualifier(int type, char* line, ASMSource* asmSource, A
         variable = calloc(1, sizeof(ARBVariable));
         variable->name = strdup(wordStart);
         variable->type = type;
-        ArrayMap_put(&asmSource->variables, variable->name, variable);
         *wordEnd = oldChar;
     }
     else return;
 
+    if (wordEnd) wordEnd = ltrim(wordEnd);
     int arraySize = wordEnd && wordEnd[0] == '[' ? extractVariableArrayIndex(line) : 0;
     char* operand = strchr(line, '=');
     if (operand && ++operand) {
@@ -284,17 +292,13 @@ static void parseDataTypeQualifier(int type, char* line, ASMSource* asmSource, A
                 if (type == TYPE_QUALIFIER_PARAM) {
                     if (strstr(elementValue, "..")) {
                         ArrayBuffer string = {0};
-                        ArrayBuffer_put(&string, '{');
                         parseInstOperand(elementValue, asmSource, &string);
-                        ArrayBuffer_put(&string, '}');
                         ArrayBuffer_put(&string, '\0');
                         ArrayList strings = {0};
-                        extractArrayVariableParams(string.buffer, &strings);
+                        extractInstOperands(string.buffer, &strings);
 
                         ArrayBuffer_free(&string);
-                        for (int j = 0; j < strings.size; j++) {
-                            ArrayList_add(&variable->uniforms, parseARBUniform(strings.elements[j]));
-                        }
+                        for (int j = 0; j < strings.size; j++) ArrayList_add(&variable->uniforms, parseARBUniform(strings.elements[j]));
                         ArrayList_free(&strings, false);
                     }
                     else {
@@ -321,6 +325,12 @@ static void parseDataTypeQualifier(int type, char* line, ASMSource* asmSource, A
                 ArrayBuffer_put(&string, '\0');
                 ArrayList_add(&variable->uniforms, parseARBUniform(string.buffer));
             }
+            else if (type == TYPE_QUALIFIER_OUTPUT || type == TYPE_QUALIFIER_ALIAS) {
+                ArrayBuffer string = {0};
+                parseInstOperand(operand, asmSource, &string);
+                ArrayBuffer_put(&string, '\0');
+                variable->value = string.buffer;
+            }
             else {
                 ArrayBuffer_putString(result, " = vec4(");
                 parseInstOperand(operand, asmSource, result);
@@ -330,6 +340,8 @@ static void parseDataTypeQualifier(int type, char* line, ASMSource* asmSource, A
     }
 
     if (result) ArrayBuffer_putString(result, ";\n");
+    if (wordEnd && wordEnd[0] == ',') parseDataTypeQualifier(type, wordEnd + 1, asmSource, result);
+    ArrayMap_put(&asmSource->variables, variable->name, variable);
 }
 
 static char* getOperandTypeInfo(char* operand, char* mask, int* componentStart) {
@@ -455,15 +467,18 @@ static void iterateASMCodeLines(ArrayMap* instructionMap, ASMSource* asmSource, 
                 parseDataTypeQualifier(TYPE_QUALIFIER_PARAM, chr + 1, asmSource, NULL);
             }
             else if (strcmp(word, "OUTPUT") == 0) {
-                parseDataTypeQualifier(TYPE_QUALIFIER_OUTPUT, chr + 1, asmSource, shaderCode);
+                parseDataTypeQualifier(TYPE_QUALIFIER_OUTPUT, chr + 1, asmSource, NULL);
+            }
+            else if (strcmp(word, "ALIAS") == 0) {
+                parseDataTypeQualifier(TYPE_QUALIFIER_ALIAS, chr + 1, asmSource, NULL);
             }
             else if (strcmp(word, "END") == 0) {
                 UNMARK_END_LINE(chr + 1);
                 *chr = oldChar;
                 break;
             }
-            else if (strcmp(word, "ALIAS") == 0) {
-                println("gladio: unimplemented asm type qualifier ALIAS");
+            else if (strcmp(word, "OPTION") == 0) {
+                println("gladio: unimplemented statement OPTION: %s", chr + 1);
             }
             else {
                 void* value = ArrayMap_get(instructionMap, word);
@@ -710,6 +725,7 @@ void ARBProgram_bind(GLenum target, GLuint programId) {
     GLX_CONTEXT_LOCK();
     ARBProgram* program = SparseArray_get(currentRenderer->clientState.arbPrograms, programId);
     GLX_CONTEXT_UNLOCK();
+    if (!program) program = ARBProgram_create();
 
     if (program) {
         if (target == GL_VERTEX_PROGRAM_ARB) {
@@ -741,7 +757,7 @@ void ARBProgram_setSource(ARBProgram* program, GLenum format, char* string, GLui
     memcpy(program->samplerTypes, asmSource.samplerTypes, sizeof(program->samplerTypes));
 
     uint8_t numTextures = 0;
-    for (int i = 0; i < MAX_TEXCOORDS; i++) if (asmSource.samplerTypes[i] > 0) numTextures++;
+    for (int i = 0; i < MAX_TEXTURES; i++) if (asmSource.samplerTypes[i] > 0) numTextures++;
     program->numTextures = MAX(numTextures, asmSource.maxTexCoords);
 
     for (int i = 0; i < asmSource.variables.size; i++) {
@@ -750,7 +766,8 @@ void ARBProgram_setSource(ARBProgram* program, GLenum format, char* string, GLui
             ArrayList_add(&program->variables, variable);
         }
         else {
-            free(variable->name);
+            MEMFREE(variable->name);
+            MEMFREE(variable->value);
             free(variable);
         }
     }
@@ -829,7 +846,7 @@ void ARBProgram_onDestroy(GLClientState* clientState) {
     }
 }
 
-bool ARBProgram_isActive() {
-    return currentRenderer->state.enabledARBPrograms[0] && currentRenderer->clientState.arbProgram[0] &&
-           currentRenderer->state.enabledARBPrograms[1] && currentRenderer->clientState.arbProgram[1];
+bool ARBProgram_isActive(GLenum target) {
+    uint8_t index = indexOfGLTarget(target);
+    return currentRenderer->state.enabledARBPrograms[index] && currentRenderer->clientState.arbProgram[index];
 }

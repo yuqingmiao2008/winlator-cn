@@ -1,6 +1,6 @@
 # Winlator CN — Wine 11.15 + 完整中文支持
 
-基于 [brunodev85/Winlator](https://github.com/brunodev85/winlator) 11.1 定制的 Android Windows 模拟器：
+基于 [brunodev85/Winlator](https://github.com/brunodev85/winlator) 11.2 之后的 main(App 源码同步至 winlator-app `a030f55`,详见 [UPSTREAM.md](UPSTREAM.md))定制的 Android Windows 模拟器：
 
 - **Wine 11.15**（上游最新稳定版，替换内置的 Wine 10.10，新 WoW64 模式：unix 侧 x86_64 + PE 侧 i386/x86_64 双架构，由 Box64 模拟执行）
 - **完整中文支持**：
@@ -29,7 +29,7 @@
 ## 目录结构
 
 ```
-android/    Winlator 11.1 App 源码（含中文翻译与 zh_CN locale 支持）
+android/    Winlator App 源码（含中文翻译与 zh_CN locale 支持；上游同步记录见 UPSTREAM.md）
 wine/       Wine 11 构建脚本 + Winlator 定制补丁
 chinese/    rootfs 中文化脚本、fontconfig、注册表补丁、Noto CJK 字体
 .github/    CI 工作流

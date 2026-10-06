@@ -69,7 +69,7 @@ typedef struct ShaderProgram {
         int projectionMatrix;
         int modelViewMatrix;
         int modelViewProjectionMatrix;
-        int textureMatrix[MAX_TEXCOORDS];
+        int textureMatrix[MAX_TEXTURES];
         int fog[5];
     } location;
 } ShaderProgram;
