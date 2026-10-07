@@ -11061,7 +11061,7 @@ index 170bdba665da6bc2d7d435f7d5179230050dba33..f1d55cc3e0e2f50e6c57913f86792ba1
                                            void *key_data, UINT key_size, void *rw_data, UINT rw_size,
                                            void *dynamic_data, UINT dynamic_size, void *static_data, UINT static_size,
 diff --git a/dlls/ntdll/unix/env.c b/dlls/ntdll/unix/env.c
-index 460888b95df3a1e5398949573146058d66fb6244..9b667ceb3fd818b3e9285675c5b281349a30f4ba 100644
+index 460888b..0ba7b68 100644
 --- a/dlls/ntdll/unix/env.c
 +++ b/dlls/ntdll/unix/env.c
 @@ -1029,6 +1029,7 @@ static void add_system_dll_path_var( WCHAR **env, SIZE_T *pos, SIZE_T *size )
@@ -11130,7 +11130,7 @@ index 460888b95df3a1e5398949573146058d66fb6244..9b667ceb3fd818b3e9285675c5b28134
 +    {
 +        SIZE_T len = strlen(wine_args) + 1;
 +        extra_args_len = len * sizeof(WCHAR);
-+        extra_args = malloc( extra_args_len );
++        extra_args = malloc( extra_args_len + sizeof(WCHAR) );
 +        ntdll_umbstowcs( wine_args, len, extra_args + 1, len );
 +        extra_args[0] = L' ';
 +        unsetenv( "WINEARGS" );
@@ -11145,13 +11145,11 @@ index 460888b95df3a1e5398949573146058d66fb6244..9b667ceb3fd818b3e9285675c5b28134
              + info->title_len + sizeof(WCHAR)
              + info->desktop_len + sizeof(WCHAR)
              + info->shellinfo_len + sizeof(WCHAR)
-@@ -2092,7 +2126,22 @@ void init_startup_info(void)
+@@ -2092,7 +2126,20 @@ void init_startup_info(void)
  
      if (info->dllpath_len) copy_unicode_string( &src, &dst, &params->DllPath, info->dllpath_len );
      copy_dos_path_string( &src, &dst, &params->ImagePathName, &nt_name, info->imagepath_len );
 -    copy_unicode_string( &src, &dst, &params->CommandLine, info->cmdline_len );
-+
-+    copy_unicode_string( &src, &dst, &params->ImagePathName, info->imagepath_len );
 +
 +    if (extra_args && info->cmdline_len > 0)
 +    {
