@@ -29172,6 +29172,25 @@ index 553a47b88067dc46a1f738aeda1dc7e60ebc6efb..d0d1421aeb65f7e61ecd29f8197d5e2c
          ret = TRUE;
      else
          WINE_ERR("Unable to wait for parent process, error %ld\n", GetLastError());
+diff --git a/server/request.c b/server/request.c
+index 5135ed5..50ab0d7 100644
+--- a/server/request.c
++++ b/server/request.c
+@@ -624,8 +624,12 @@ static char *create_server_dir( int force )
+     if (asprintf( &base_dir, "%s/.wineserver", config_dir ) == -1)
+         fatal_error( "out of memory\n" );
+ #else
+-    if (asprintf( &base_dir, "/tmp/.wine-%u", getuid() ) == -1)
+-        fatal_error( "out of memory\n" );
++    {
++        /* Winlator: 与客户端 (dlls/ntdll/unix/server.c init_server_dir) 保持一致, 从 TMPDIR 定位 */
++        const char *tmpdir = getenv( "TMPDIR" );
++        if (asprintf( &base_dir, "%s/.wine-%u", (tmpdir && *tmpdir) ? tmpdir : "/tmp", getuid() ) == -1)
++            fatal_error( "out of memory\n" );
++    }
+ #endif
+     create_dir( base_dir, &st2 );
+ 
 diff --git a/server/unicode.c b/server/unicode.c
 index bb39b55e50c3180867463b0edff548c6a1a9d793..33c1a5a641a674f42fe7ccc1429e9501a4331463 100644
 --- a/server/unicode.c
