@@ -7,12 +7,13 @@
 #
 # 用法: patch-rootfs.sh <repo根目录> <wine-staging目录> <android-assets目录>
 # 做事:
-#  1. 解包 rootfs.tzst, 用新 Wine 11 替换 /opt/wine
+#  1. 解包 rootfs.tzst, 用新 Wine 11 替换 /opt/wine, 并删除运行时用不到的开发文件 (slim-wine.sh)
 #  2. 校验 wine 产物所有 NEEDED SONAME 均存在于 rootfs
 #  3. 注入 Noto Sans CJK SC 字体 + fontconfig 中文别名
 #  4. 生成 zh_CN.utf8 locale + X11 zh_CN locale
 #  5. 给 container_pattern / rootfs_patches 的 Wine 前缀注入中文字体注册表
-#  6. 重新打包 rootfs.tzst / container_pattern.tzst / rootfs_patches.tzst
+#  6. 打包前跑健康检查 (healthcheck.sh rootfs), 再重新打包 rootfs.tzst /
+#     container_pattern.tzst / rootfs_patches.tzst
 # ============================================================================
 set -euo pipefail
 
@@ -21,8 +22,17 @@ STAGING="$(realpath "${2:?缺少 wine staging 目录参数}")"
 ASSETS="$(realpath "${3:?缺少 android assets 目录参数}")"
 
 CHINESE="$REPO/chinese"
-WORK="$(mktemp -d /tmp/rootfs-work.XXXXXX)"
-trap 'rm -rf "$WORK"' EXIT
+WORK="$(mktemp -d /tmp/rootfs-work.XXXXXX)"   # 会被整体打包成 rootfs.tzst: 只能放 rootfs 本身的内容
+AUX="$(mktemp -d /tmp/rootfs-aux.XXXXXX)"     # container_pattern / rootfs_patches 的工作目录 (必须在 WORK 之外!)
+trap 'rm -rf "$WORK" "$AUX"' EXIT
+
+SUDO=""; [ "$(id -u)" -eq 0 ] || SUDO="sudo"
+ROOTFS_ZSTD_LEVEL="${ROOTFS_ZSTD_LEVEL:-19}"   # 本地快速试验时可调低
+
+echo "==> [0/8] 安装所需工具 (locales / X11 locale 数据 libx11-data / zstd / fontconfig)"
+$SUDO env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    locales libx11-data zstd xz-utils file fontconfig >/dev/null 2>&1 || true
+command -v zstd >/dev/null 2>&1 || { echo "!!! 缺少 zstd"; exit 1; }
 
 echo "==> [1/8] 解包 rootfs.tzst"
 tar -I zstd -xf "$ASSETS/rootfs.tzst" -C "$WORK"
@@ -30,6 +40,7 @@ tar -I zstd -xf "$ASSETS/rootfs.tzst" -C "$WORK"
 echo "==> [2/8] 替换 /opt/wine 为 Wine 11"
 rm -rf "$WORK/opt/wine"
 cp -a "$STAGING/opt/wine" "$WORK/opt/wine"
+bash "$CHINESE/slim-wine.sh" "$WORK"
 
 # wineserver 静态化处理说明: wine 官方 make install 会产出 lib/libwine.so.1,
 # 保留即可 (位于 /opt/wine 内部, 由 wine 二进制相对路径解析, 不依赖 rootfs)
@@ -141,7 +152,6 @@ print("    所有 NEEDED 均可解析 ✓")
 PYEOF
 
 echo "==> [4/8] 注入中文字体 (Noto Sans CJK SC)"
-sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends locales libx11-common zstd xz-utils file >/dev/null 2>&1 || true
 mkdir -p "$WORK/usr/share/fonts/opentype/noto"
 cp "$CHINESE/fonts/NotoSansCJKsc-Regular.otf" "$WORK/usr/share/fonts/opentype/noto/"
 cp "$CHINESE/fonts/NotoSansCJKsc-Bold.otf" "$WORK/usr/share/fonts/opentype/noto/"
@@ -150,7 +160,7 @@ cp "$CHINESE/69-noto-cjk.conf" "$WORK/etc/fonts/conf.d/69-noto-cjk.conf"
 echo "==> [5/8] 生成 zh_CN.utf8 locale (glibc 2.39 数据文件, 架构无关)"
 localedef --no-archive --prefix="$WORK/" -i zh_CN -f UTF-8 zh_CN.utf8 || {
     echo "!!! localedef 失败"; exit 1; }
-ls "$WORK/usr/lib/locale/" | grep zh || true
+find "$WORK/usr/lib/locale" -maxdepth 1 -name 'zh*' -printf '    %f\n' || true
 
 echo "==> [6/8] X11 zh_CN locale"
 if [ -d /usr/share/X11/locale/zh_CN.UTF-8 ]; then
@@ -165,7 +175,7 @@ fi
 
 echo "==> [7/8] Wine 前缀注册表中文补丁 + 字体注入"
 # 7.1 container_pattern.tzst
-CP="$WORK/cp"; mkdir -p "$CP"
+CP="$AUX/cp"; mkdir -p "$CP"
 tar -I zstd -xf "$ASSETS/container_pattern.tzst" -C "$CP"
 if [ -f "$CP/.wine/system.reg" ]; then
     python3 "$CHINESE/reg-patch.py" "$CP/.wine/system.reg"
@@ -177,7 +187,7 @@ cp "$CHINESE/fonts/NotoSansCJKsc-Regular.otf" "$CHINESE/fonts/NotoSansCJKsc-Bold
 mv "$ASSETS/container_pattern.tzst.new" "$ASSETS/container_pattern.tzst"
 
 # 7.2 rootfs_patches.tzst
-RP="$WORK/rp"; mkdir -p "$RP"
+RP="$AUX/rp"; mkdir -p "$RP"
 tar -I zstd -xf "$ASSETS/rootfs_patches.tzst" -C "$RP"
 if [ -f "$RP/home/xuser/.wine/system.reg" ]; then
     python3 "$CHINESE/reg-patch.py" "$RP/home/xuser/.wine/system.reg"
@@ -188,9 +198,11 @@ cp "$CHINESE/fonts/NotoSansCJKsc-Regular.otf" "$CHINESE/fonts/NotoSansCJKsc-Bold
     -cf "$ASSETS/rootfs_patches.tzst.new" --use-compress-program="zstd -q -T0" . )
 mv "$ASSETS/rootfs_patches.tzst.new" "$ASSETS/rootfs_patches.tzst"
 
-echo "==> [8/8] 重新打包 rootfs.tzst"
+echo "==> [8/8] 打包前健康检查 + 重新打包 rootfs.tzst"
+bash "$CHINESE/healthcheck.sh" rootfs "$WORK" "${WINE_VERSION:-}"
+bash "$CHINESE/healthcheck.sh" smoke "$WORK"
 ( cd "$WORK" && tar --numeric-owner --owner=0 --group=0 --sort=name \
-    -cf "$ASSETS/rootfs.tzst.new" --use-compress-program="zstd -q -19 -T0" . )
+    -cf "$ASSETS/rootfs.tzst.new" --use-compress-program="zstd -q -$ROOTFS_ZSTD_LEVEL -T0" . )
 mv "$ASSETS/rootfs.tzst.new" "$ASSETS/rootfs.tzst"
 
 echo "==> 完成! 产物:"

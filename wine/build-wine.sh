@@ -11,6 +11,11 @@
 #    (libudev / libusb / libgbm 等在 rootfs 中不存在, 必须禁用)
 #
 # 用法: ./build-wine.sh <wine源码目录> <输出目录(staging)>
+#
+# 可选环境变量:
+#   USE_CCACHE=1   用 ccache 包装 gcc / mingw 交叉编译器 (由工作流持久化 CCACHE_DIR);
+#                  缓存命中时增量重编可从约 1 小时降到几分钟。已实测: Wine 的 configure 接受
+#                  CC / x86_64_CC / i386_CC 带 ccache 前缀, 重编命中率 100%
 # ============================================================================
 set -euo pipefail
 
@@ -19,9 +24,10 @@ OUT="$(realpath "${2:?缺少输出目录参数}")"
 
 echo "==> [1/5] 安装构建依赖"
 sudo apt-get update -qq
+# shellcheck disable=SC2024  # 日志写入 /tmp/apt.log 无需 root 权限
 sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
     bison flex gettext git python3 make gcc g++ \
-    mingw-w64 \
+    mingw-w64 ccache \
     libfreetype-dev libfontconfig-dev \
     libx11-dev libxext-dev libxfixes-dev libxi-dev libxrender-dev \
     libxrandr-dev libxcursor-dev libxcomposite-dev \
@@ -37,6 +43,15 @@ cd "$SRC"
 
 echo "==> [3/5] configure (新 WoW64: i386+x86_64 PE)"
 rm -rf build && mkdir -p build && cd build
+
+if [ "${USE_CCACHE:-0}" = "1" ] && command -v ccache >/dev/null 2>&1; then
+    export CC="ccache gcc" CXX="ccache g++"
+    export x86_64_CC="ccache x86_64-w64-mingw32-gcc" i386_CC="ccache i686-w64-mingw32-gcc"
+    export CCACHE_BASEDIR="$SRC" CCACHE_NOHASHDIR=1
+    ccache -z >/dev/null 2>&1 || true
+    echo "    ccache 已启用: $(ccache --version | head -1), 目录: ${CCACHE_DIR:-默认}"
+fi
+
 ../configure \
     --prefix=/opt/wine \
     --enable-archs=i386,x86_64 \
@@ -57,6 +72,10 @@ rm -rf build && mkdir -p build && cd build
 
 echo "==> [4/5] 编译 make -j$(nproc)"
 make -j"$(nproc)"
+if [ "${USE_CCACHE:-0}" = "1" ] && command -v ccache >/dev/null 2>&1; then
+    echo "--- ccache 统计 ---"
+    ccache -s 2>&1 | grep -E "Hits|Misses|Cache size" | head -6 || true
+fi
 
 echo "==> [5/5] 安装到 staging: $OUT"
 rm -rf "$OUT"
@@ -75,6 +94,9 @@ grep -E 'PE32|MS Windows' "$FILEMAP" | cut -d: -f1 \
 rm -f "$FILEMAP"
 echo "--- strip 后体积 ---"
 du -sh "$OUT/opt/wine"
+
+echo "==> [7/7] 精简: 删除运行时用不到的开发文件 (include / *.a / man), 缓存与 rootfs 都更小"
+bash "$(dirname "$(realpath "$0")")/../chinese/slim-wine.sh" "$OUT"
 
 echo "==> 构建产物概览:"
 ls "$OUT/opt/wine/bin/" | head -20
