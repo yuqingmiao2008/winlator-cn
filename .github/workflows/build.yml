@@ -7,30 +7,72 @@ on:
         description: "Wine 上游标签 (wine-mirror)"
         required: false
         default: "wine-11.15"
+      draft_release:
+        description: "构建完成后创建草稿预发布 (仅仓库所有者可见), 方便下载验证产物"
+        type: boolean
+        required: false
+        default: false
   push:
     branches: [main]
     tags: ["v*"]
 
+# 默认只读; 仅 package 任务 (需要创建 Release) 单独授予 contents: write
 permissions:
-  contents: write
+  contents: read
+
+# 同一分支的新构建取消旧构建; tag 发行构建不会被取消
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
 
 env:
   WINE_TAG: ${{ github.event.inputs.wine_tag || 'wine-11.15' }}
+  # 默认 Wine 标签固定到具体提交: 克隆后校验, 防止上游标签被改写 / 镜像被篡改 (依赖可溯源)
+  WINE_PINNED_TAG: wine-11.15
+  WINE_PINNED_COMMIT: 2df1ee28039cf84776eb1421ed90bd154cebb65f
 
 jobs:
+  # =====================================================================
+  # Job 0: 静态检查 (秒级): 脚本语法 / shellcheck / 二进制资源哈希清单
+  # 先于耗时的 Wine 编译执行, 低级错误不再等到一个小时后才暴露
+  # =====================================================================
+  lint:
+    name: 静态检查 (脚本 / 资源清单)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout 仓库
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: 脚本语法与 shellcheck
+        run: |
+          set -euo pipefail
+          files=(chinese/*.sh wine/*.sh ci/*.sh)
+          for f in "${files[@]}"; do bash -n "$f"; done
+          shellcheck -S warning "${files[@]}"
+          python3 -m py_compile chinese/reg-patch.py
+          echo "脚本静态检查通过: ${#files[@]} 个 shell 脚本"
+
+      - name: 二进制资源哈希清单校验 (不允许未登记的二进制变更)
+        run: bash ci/assets-manifest.sh verify
+
   # =====================================================================
   # Job 1: Wine 11 编译 (Winlator 定制补丁, 新 WoW64 模式)
   # 独立成 job: 只要本 job 成功, wine-staging 即写入 Actions 缓存,
   # 后续打包阶段失败重试时无需再花 ~55 分钟重编 Wine。
+  # 缓存只在"健康检查 + 冒烟测试"通过之后才会保存 (job 失败则不保存),
+  # 因此不会把一个"能编译但一启动就崩"的 Wine 缓存下来。
   # =====================================================================
   wine-build:
     name: Wine 11 编译
+    needs: lint
     runs-on: ubuntu-24.04
     timeout-minutes: 330
 
     steps:
       - name: Checkout 仓库
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: 环境信息
         run: |
@@ -38,19 +80,37 @@ jobs:
           df -h / | tail -1
           nproc
 
+      # key 包含: Wine 标签 + 补丁 + 构建脚本 + 精简脚本。任一改动都会使缓存失效,
+      # 避免"改了构建脚本却仍在用旧缓存"的静默错误。
       - name: Wine 构建缓存
         id: wine-cache
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: wine-staging
-          key: wine-${{ env.WINE_TAG }}-r1-${{ hashFiles('wine/winlator-custom-wine11.patch') }}
+          key: wine-${{ env.WINE_TAG }}-r2-${{ hashFiles('wine/winlator-custom-wine11.patch', 'wine/build-wine.sh', 'chinese/slim-wine.sh') }}
 
-      - name: 获取 Wine 源码并应用 Winlator 定制补丁
+      # ccache: 补丁/脚本改动后增量重编 (只重编变化的文件), 通常几分钟而不是 ~1 小时
+      - name: ccache 缓存 (增量重编)
+        if: steps.wine-cache.outputs.cache-hit != 'true'
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: .ccache
+          key: ccache-${{ env.WINE_TAG }}-${{ hashFiles('wine/winlator-custom-wine11.patch', 'wine/build-wine.sh') }}
+          restore-keys: |
+            ccache-${{ env.WINE_TAG }}-
+
+      - name: 获取 Wine 源码 (校验提交) 并应用 Winlator 定制补丁
         if: steps.wine-cache.outputs.cache-hit != 'true'
         run: |
           set -euxo pipefail
           git clone --depth 1 --branch "$WINE_TAG" https://github.com/wine-mirror/wine.git wine-src
           cd wine-src
+          COMMIT="$(git rev-parse HEAD)"
+          echo "Wine $WINE_TAG 提交: $COMMIT"
+          if [ "$WINE_TAG" = "$WINE_PINNED_TAG" ] && [ "$COMMIT" != "$WINE_PINNED_COMMIT" ]; then
+            echo "::error::$WINE_TAG 的提交 ($COMMIT) 与固定值 ($WINE_PINNED_COMMIT) 不符: 上游标签被改写或镜像异常"
+            exit 1
+          fi
           git config user.email "ci@local" && git config user.name "CI"
           git apply --binary --stat ../wine/winlator-custom-wine11.patch
           git apply --binary ../wine/winlator-custom-wine11.patch
@@ -62,6 +122,10 @@ jobs:
 
       - name: 构建 Wine 11
         if: steps.wine-cache.outputs.cache-hit != 'true'
+        env:
+          USE_CCACHE: "1"
+          CCACHE_DIR: ${{ github.workspace }}/.ccache
+          CCACHE_MAXSIZE: 1500M
         run: |
           bash wine/build-wine.sh wine-src "$GITHUB_WORKSPACE/wine-staging"
 
@@ -70,63 +134,57 @@ jobs:
         run: |
           # 保证缓存可恢复: 把 symlink 换成真实文件拷贝
           cd wine-staging/opt/wine/lib
-          find -type l | while read -r l; do
+          find . -type l | while read -r l; do
             tgt=$(readlink "$l"); rm -f "$l"; cp -a "$tgt" "$l" || true
           done
           du -sh "$GITHUB_WORKSPACE/wine-staging"
           ls "$GITHUB_WORKSPACE/wine-staging/opt/wine/bin/wineserver" >/dev/null
+
+      - name: Wine 健康检查 + 冒烟测试 (通过后才会写入缓存)
+        if: steps.wine-cache.outputs.cache-hit != 'true'
+        run: |
+          set -euo pipefail
+          export WINE_VERSION="${WINE_TAG#wine-}"
+          bash chinese/healthcheck.sh wine wine-staging
+          bash chinese/healthcheck.sh smoke wine-staging
 
   # =====================================================================
   # Job 2: rootfs 注入 (Wine 11 + 中文支持) -> APK -> 签名 -> 发行
   # =====================================================================
   package:
     name: rootfs 中文化 + APK
-    needs: wine-build
+    needs: [lint, wine-build]
     runs-on: ubuntu-24.04
     timeout-minutes: 180
+    permissions:
+      contents: write   # 仅此任务需要创建 / 更新 Release
 
     steps:
       - name: Checkout 仓库
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: 恢复 Wine 11 构建缓存
         id: wine-cache
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: wine-staging
-          key: wine-${{ env.WINE_TAG }}-r1-${{ hashFiles('wine/winlator-custom-wine11.patch') }}
+          key: wine-${{ env.WINE_TAG }}-r2-${{ hashFiles('wine/winlator-custom-wine11.patch', 'wine/build-wine.sh', 'chinese/slim-wine.sh') }}
           fail-on-cache-miss: true
 
-      - name: strip Wine 调试符号 (缓存产物瘦身)
-        # 旧缓存中的 wine 产物未 strip (rootfs.tzst 因此膨胀到 ~400MB)。
-        # ELF 用原生 strip; PE 侧 (mingw 编译的 i386/x86_64 DLL, 体积大头) 用
-        # mingw strip。原地处理, 无需重编 Wine (~55min) 即可大幅缩减 APK 体积。
+      - name: 校验缓存中的 Wine (防止缓存损坏)
         run: |
-          set -euxo pipefail
-          sudo apt-get install -y -qq file binutils binutils-mingw-w64-x86-64 >/dev/null
-          before=$(du -sm wine-staging/opt/wine | cut -f1)
-          FILEMAP="$(mktemp)"
-          find wine-staging/opt/wine -type f -exec file {} + >"$FILEMAP" 2>/dev/null || true
-          grep -F 'ELF' "$FILEMAP" | cut -d: -f1 \
-            | xargs -r -n 50 strip --strip-unneeded 2>/dev/null || true
-          grep -E 'PE32|MS Windows' "$FILEMAP" | cut -d: -f1 \
-            | xargs -r -n 50 x86_64-w64-mingw32-strip --strip-unneeded 2>/dev/null || true
-          rm -f "$FILEMAP"
-          after=$(du -sm wine-staging/opt/wine | cut -f1)
-          echo "wine 体积: ${before}MB -> ${after}MB"
-          # 校验关键产物未被破坏 (unix ELF 与 PE DLL 各抽一个)
-          readelf -h wine-staging/opt/wine/bin/wine >/dev/null
-          readelf -d wine-staging/opt/wine/lib/wine/x86_64-unix/ntdll.so >/dev/null
-          x86_64-w64-mingw32-objdump -h \
-            wine-staging/opt/wine/lib/wine/x86_64-windows/kernel32.dll >/dev/null
+          set -euo pipefail
+          export WINE_VERSION="${WINE_TAG#wine-}"
+          bash chinese/healthcheck.sh wine wine-staging
 
       # ---------------------------------------------------------------
-      # 阶段 2: rootfs 注入 Wine 11 + 中文支持
+      # 阶段 2: rootfs 注入 Wine 11 + 中文支持 (内含: 精简 / 打包前健康检查 / 冒烟测试)
       # ---------------------------------------------------------------
-      - name: 注入 rootfs (Wine 11 + 中文字体/locale/注册表)
+      - name: 注入 rootfs (Wine 11 + 中文字体/locale)
         run: |
           set -euxo pipefail
-          chmod +x wine/build-wine.sh chinese/patch-rootfs.sh
+          export WINE_VERSION="${WINE_TAG#wine-}"
+          chmod +x wine/build-wine.sh chinese/*.sh
           bash chinese/patch-rootfs.sh "$GITHUB_WORKSPACE" \
               "$GITHUB_WORKSPACE/wine-staging" \
               "$GITHUB_WORKSPACE/android/app/src/main/assets"
@@ -136,7 +194,7 @@ jobs:
       # 阶段 3: Android APK
       # ---------------------------------------------------------------
       - name: 安装 JDK 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # v4.9.1
         with:
           distribution: temurin
           java-version: "17"
@@ -145,36 +203,47 @@ jobs:
         run: |
           yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null || true
           "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" \
-            "platforms;android-34" "build-tools;34.0.0" \
+            "platforms;android-35" "platforms;android-34" "build-tools;34.0.0" \
             "ndk;24.0.8215888" "cmake;3.22.1" >/dev/null
 
       - name: Gradle 缓存
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: |
             ~/.gradle/caches
             ~/.gradle/wrapper
-          key: gradle-${{ hashFiles('android/**/*.gradle', 'android/gradle/wrapper/gradle-wrapper.properties') }}
+          key: gradle-${{ hashFiles('android/**/*.gradle', 'android/gradle/wrapper/gradle-wrapper.properties', 'android/gradle.properties') }}
           restore-keys: gradle-
 
       - name: 构建 APK
         working-directory: android
         run: |
           chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon -x lint
+          # 上游 AGP 8 / Gradle 8 已移除 gradle.properties 里的 org.gradle.jvmargs (默认仅 512MB),
+          # CI 显式给足堆内存; 启用 Gradle 构建缓存 (任务输出复用)
+          ./gradlew assembleDebug --no-daemon --build-cache -x lint \
+            -Dorg.gradle.jvmargs="-Xmx3g -Dfile.encoding=UTF-8"
 
-      - name: 签名 APK
+      - name: 命名 + 签名 APK + 生成 SHA256
         env:
           KEYSTORE_B64: ${{ secrets.KEYSTORE_B64 }}
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
-          set -euxo pipefail
+          set -euo pipefail
           APK_IN="android/app/build/outputs/apk/debug/app-debug.apk"
           test -f "$APK_IN"
-          # 去掉 tag 前缀 v: v1.0.0 -> 1.0.0 (main 分支构建时 REF_NAME=main, 保持原样)
-          OUT="Winlator_CN_Wine11_${GITHUB_REF_NAME#v}.apk"
+
+          # 产物命名: Winlator_CN_Wine<Wine版本>_v<应用版本>_<提交短hash>_<UTC日期>.apk
+          #   应用版本: tag 构建取 tag (去掉前缀 v); 其他构建取 build.gradle 的 versionName + "-dev"
+          WINE_VER="${WINE_TAG#wine-}"
+          VERSION_NAME="$(sed -n 's/^ *versionName "\(.*\)".*/\1/p' android/app/build.gradle | head -1)"
+          if [ "$GITHUB_REF_TYPE" = "tag" ]; then APP_VER="${GITHUB_REF_NAME#v}"; else APP_VER="${VERSION_NAME}-dev"; fi
+          SHORT_SHA="${GITHUB_SHA:0:7}"
+          BUILD_DATE="$(date -u +%Y%m%d)"
+          OUT="Winlator_CN_Wine${WINE_VER}_v${APP_VER}_${SHORT_SHA}_${BUILD_DATE}.apk"
+
           if [ -n "$KEYSTORE_B64" ]; then
             echo "$KEYSTORE_B64" | base64 -d > /tmp/release.keystore
             BT="$ANDROID_HOME/build-tools/34.0.0"
@@ -184,32 +253,88 @@ jobs:
               --ks-pass "pass:$KEYSTORE_PASSWORD" \
               --key-pass "pass:$KEY_PASSWORD" \
               --out "/tmp/$OUT" /tmp/aligned.apk
+            rm -f /tmp/release.keystore
           else
-            # 无签名密钥时保留 debug 签名, 仍可直接安装
+            # 无签名密钥时保留 debug 签名, 仍可直接安装 (健康检查会对此给出警告)
             cp "$APK_IN" "/tmp/$OUT"
           fi
           mkdir -p dist && cp "/tmp/$OUT" "dist/$OUT"
+          (cd dist && sha256sum "$OUT" > "$OUT.sha256" && sha256sum -c "$OUT.sha256")
           ls -lh dist/
 
+          {
+            echo "APK_NAME=$OUT"
+            echo "APK_SHA256=$(cut -d' ' -f1 "dist/$OUT.sha256")"
+            echo "WINE_VER=$WINE_VER"
+            echo "APP_VER=$APP_VER"
+            echo "SHORT_SHA=$SHORT_SHA"
+            echo "BUILD_DATE=$BUILD_DATE"
+          } >> "$GITHUB_ENV"
+
+      - name: APK 健康检查 (完整性 / 包名 / 签名 / 资产)
+        run: bash chinese/healthcheck.sh apk "dist/$APK_NAME" com.winlator.cn
+
+      - name: 构建摘要
+        run: |
+          {
+            echo "## 构建产物"
+            echo
+            echo "| 项目 | 内容 |"
+            echo "|---|---|"
+            echo "| APK | \`$APK_NAME\` ($(( $(stat -c %s "dist/$APK_NAME") / 1048576 )) MB) |"
+            echo "| SHA-256 | \`$APK_SHA256\` |"
+            echo "| Wine | \`$WINE_TAG\` |"
+            echo "| 应用版本 | \`$APP_VER\` |"
+            echo "| 提交 | \`$GITHUB_SHA\` |"
+            echo "| 构建日期 (UTC) | $BUILD_DATE |"
+            echo
+            echo "校验: 下载 APK 与同名 \`.sha256\` 文件放在同一目录, 运行 \`sha256sum -c $APK_NAME.sha256\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: 上传构建产物 (Artifact)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: winlator-cn-wine11-apk
-          path: dist/*.apk
+          name: winlator-cn-wine${{ env.WINE_VER }}-${{ env.SHORT_SHA }}
+          path: |
+            dist/*.apk
+            dist/*.sha256
           if-no-files-found: error
 
       # ---------------------------------------------------------------
-      # 阶段 4: 发行 (仅 tag 推送时)
+      # 阶段 4: 发行 (tag 推送 -> 正式 Release; 手动触发且勾选 draft_release -> 草稿预发布)
       # ---------------------------------------------------------------
-      - name: 创建 GitHub Release 并上传 APK
+      - name: 生成发行说明
+        if: startsWith(github.ref, 'refs/tags/v') || inputs.draft_release
+        run: |
+          cat > release-notes.md <<EOF
+          基于 Winlator App 上游 \`a030f55\` (详见仓库 UPSTREAM.md), 集成 Wine $WINE_TAG (新 WoW64 模式) + 完整中文支持 (界面翻译 / 中文字体 / zh_CN locale)。
+
+          - 构建提交: \`$GITHUB_SHA\`
+          - 构建日期 (UTC): $BUILD_DATE
+          - SHA-256: \`$APK_SHA256\`
+
+          校验: 将 APK 与 \`$APK_NAME.sha256\` 放在同一目录, 运行 \`sha256sum -c $APK_NAME.sha256\`。
+          EOF
+
+      - name: 创建 GitHub Release 并上传 APK + SHA256
         if: startsWith(github.ref, 'refs/tags/v')
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          APK=$(ls dist/*.apk | head -1)
           TAG="${GITHUB_REF_NAME}"
-          gh release create "$TAG" "$APK" \
+          gh release create "$TAG" dist/*.apk dist/*.sha256 \
             --title "Winlator 中文版 (Wine 11) $TAG" \
-            --notes "基于 Winlator 11.1, 集成 Wine $WINE_TAG (新 WoW64 模式) + 完整中文支持 (界面翻译/中文字体/zh_CN locale)。下载 APK 后直接安装即可。" \
+            --notes-file release-notes.md \
             --repo "$GITHUB_REPOSITORY" || \
-          gh release upload "$TAG" "$APK" --clobber --repo "$GITHUB_REPOSITORY"
+          gh release upload "$TAG" dist/*.apk dist/*.sha256 --clobber --repo "$GITHUB_REPOSITORY"
+
+      - name: 创建草稿预发布 (手动触发, 仅仓库所有者可见)
+        if: ${{ !startsWith(github.ref, 'refs/tags/v') && inputs.draft_release }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "dev-${SHORT_SHA}-${BUILD_DATE}" dist/*.apk dist/*.sha256 \
+            --draft --prerelease --target "$GITHUB_SHA" \
+            --title "构建 ${SHORT_SHA} (${BUILD_DATE}, Wine ${WINE_VER})" \
+            --notes-file release-notes.md \
+            --repo "$GITHUB_REPOSITORY"
