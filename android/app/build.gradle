@@ -1,13 +1,14 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdk 34
+    namespace 'com.winlator'
+    compileSdk 35
 
     defaultConfig {
         applicationId 'com.winlator.cn'
         minSdkVersion 26
         targetSdkVersion 28
-        versionCode 29
+        versionCode 34
         versionName "1.0.0"
     }
 
@@ -37,29 +38,32 @@ android {
 
     // midihandler 以 CMake IMPORTED 目标方式链接 jniLibs 中的预编译库,
     // AGP 会同时从 jniLibs 与 CMake 产物打包同名 .so (内容完全相同,
-    // IMPORTED_LOCATION 直接指向 jniLibs 文件), 用 pickFirsts 去重
-    packagingOptions {
-        pickFirsts += [
-            'lib/arm64-v8a/libFLAC.so',
-            'lib/arm64-v8a/libc++_shared.so',
-            'lib/arm64-v8a/libfluidsynth.so',
-            'lib/arm64-v8a/libfluidsynth-assetloader.so',
-            'lib/arm64-v8a/libgio-2.0.so',
-            'lib/arm64-v8a/libglib-2.0.so',
-            'lib/arm64-v8a/libgmodule-2.0.so',
-            'lib/arm64-v8a/libgobject-2.0.so',
-            'lib/arm64-v8a/libgthread-2.0.so',
-            'lib/arm64-v8a/libinstpatch-1.0.so',
-            'lib/arm64-v8a/liboboe.so',
-            'lib/arm64-v8a/libogg.so',
-            'lib/arm64-v8a/libopus.so',
-            'lib/arm64-v8a/libpcre.so',
-            'lib/arm64-v8a/libpcreposix.so',
-            'lib/arm64-v8a/libsndfile.so',
-            'lib/arm64-v8a/libvorbis.so',
-            'lib/arm64-v8a/libvorbisenc.so',
-            'lib/arm64-v8a/libvorbisfile.so'
-        ]
+    // IMPORTED_LOCATION 直接指向 jniLibs 文件), 用 jniLibs.pickFirsts 去重。
+    // AGP 8: 使用 packaging.jniLibs 并以 addAll 追加 (避免依赖属性 setter 的 += 写法)
+    packaging {
+        jniLibs {
+            pickFirsts.addAll([
+                'lib/arm64-v8a/libFLAC.so',
+                'lib/arm64-v8a/libc++_shared.so',
+                'lib/arm64-v8a/libfluidsynth.so',
+                'lib/arm64-v8a/libfluidsynth-assetloader.so',
+                'lib/arm64-v8a/libgio-2.0.so',
+                'lib/arm64-v8a/libglib-2.0.so',
+                'lib/arm64-v8a/libgmodule-2.0.so',
+                'lib/arm64-v8a/libgobject-2.0.so',
+                'lib/arm64-v8a/libgthread-2.0.so',
+                'lib/arm64-v8a/libinstpatch-1.0.so',
+                'lib/arm64-v8a/liboboe.so',
+                'lib/arm64-v8a/libogg.so',
+                'lib/arm64-v8a/libopus.so',
+                'lib/arm64-v8a/libpcre.so',
+                'lib/arm64-v8a/libpcreposix.so',
+                'lib/arm64-v8a/libsndfile.so',
+                'lib/arm64-v8a/libvorbis.so',
+                'lib/arm64-v8a/libvorbisenc.so',
+                'lib/arm64-v8a/libvorbisfile.so'
+            ])
+        }
     }
 }
 
@@ -70,4 +74,5 @@ dependencies {
     implementation 'com.github.luben:zstd-jni:1.5.2-3@aar'
     implementation 'org.tukaani:xz:1.7'
     implementation 'org.apache.commons:commons-compress:1.20'
+    implementation 'androidx.lifecycle:lifecycle-process:2.5.1'
 }

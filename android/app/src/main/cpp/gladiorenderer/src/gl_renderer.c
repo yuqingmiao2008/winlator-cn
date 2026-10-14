@@ -69,7 +69,7 @@ void GLRenderer_initOnEGLContext(GLRenderer* renderer) {
     memcpy(renderer->state.color, color, sizeof(color));
     memcpy(renderer->state.normal, normal, sizeof(normal));
 
-    for (int i = 0; i < MAX_TEXCOORDS; i++) {
+    for (int i = 0; i < MAX_TEXTURES; i++) {
         memcpy(renderer->state.texCoords[i], texCoord, sizeof(texCoord));
 
         GLfloat param = GL_MODULATE;
@@ -121,6 +121,16 @@ static void bindVertexBuffer(GLRenderer* renderer, GLuint bufferId, GLint locati
     glVertexAttribPointer(location, itemSize, GL_FLOAT, GL_FALSE, 0, (void*)0);
 }
 
+static void normalizeTexCoords(GLTexture* texture, ArrayBuffer* texCoords) {
+    float* vectors = (float*)texCoords->buffer;
+    float invWidth = 1.0f / texture->width;
+    float invHeight = 1.0f / texture->height;
+    for (int i = 0, count = texCoords->size / sizeof(float); i < count; i += 4) {
+        vectors[i+0] *= invWidth;
+        vectors[i+1] *= invHeight;
+    }
+}
+
 static void updateVertexBuffers(GLRenderer* renderer, int* attribLocations) {
     Geometry* geometry = &renderer->geometry;
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, renderer->bufferIds[0]);
@@ -144,8 +154,10 @@ static void updateVertexBuffers(GLRenderer* renderer, int* attribLocations) {
         bindVertexBuffer(renderer, renderer->bufferIds[3], attribLocations[NORMAL_ARRAY_INDEX], 3, geometry->normals.size, geometry->normals.buffer);
     }
 
-    for (int i = 0, j = TEXCOORD_ARRAY_INDEX; i < MAX_TEXCOORDS; i++, j++) {
+    for (int i = 0, j = TEXCOORD_ARRAY_INDEX, k, count; i < MAX_TEXTURES; i++, j++) {
         if (attribLocations[j] != -1 && geometry->texCoords[i].size > 0) {
+            GLTexture* texture = renderer->clientState.texture[i][indexOfGLTarget(GL_TEXTURE_2D)];
+            if (texture && texture->normalizeCoords) normalizeTexCoords(texture, &geometry->texCoords[i]);
             bindVertexBuffer(renderer, renderer->bufferIds[j+1], attribLocations[j], 4, geometry->texCoords[i].size, geometry->texCoords[i].buffer);
         }
         geometry->texCoords[i].size = 0;
@@ -209,22 +221,33 @@ static ShaderMaterial* setCurrentMaterial(GLRenderer* renderer, MaterialOptions*
     return material;
 }
 
-bool GLRenderer_useARBProgram(GLRenderer* renderer, bool updateUniforms) {
-    if (!ARBProgram_isActive()) return false;
-    ARBProgram* vertexProgram = renderer->clientState.arbProgram[indexOfGLTarget(GL_VERTEX_PROGRAM_ARB)];
-    ARBProgram* fragmentProgram = renderer->clientState.arbProgram[indexOfGLTarget(GL_FRAGMENT_PROGRAM_ARB)];
+bool GLRenderer_useARBProgram(GLRenderer* renderer, bool fullUpdate) {
+    if (!ARBProgram_isActive(GL_VERTEX_PROGRAM_ARB) && !ARBProgram_isActive(GL_FRAGMENT_PROGRAM_ARB)) return false;
+    GLClientState* clientState = &renderer->clientState;
+    ARBProgram* vertexProgram = clientState->arbProgram[indexOfGLTarget(GL_VERTEX_PROGRAM_ARB)];
+    ARBProgram* fragmentProgram = clientState->arbProgram[indexOfGLTarget(GL_FRAGMENT_PROGRAM_ARB)];
 
-    uint8_t numTextures = MAX(vertexProgram->numTextures, fragmentProgram->numTextures);
-    if (!vertexProgram->material) {
+    uint8_t numTextures = vertexProgram && fragmentProgram ? MAX(vertexProgram->numTextures, fragmentProgram->numTextures) : MAX_TEXTURES;
+    ShaderMaterial* material = vertexProgram ? vertexProgram->material : fragmentProgram->material;
+    if (!material) {
         MaterialOptions options = {false, true, false, false, false, numTextures, vertexProgram, fragmentProgram};
-        vertexProgram->material = setCurrentMaterial(renderer, &options);
-        fragmentProgram->material = vertexProgram->material;
+        material = setCurrentMaterial(renderer, &options);
+        if (vertexProgram) vertexProgram->material = material;
+        if (fragmentProgram) fragmentProgram->material = material;
     }
     else {
-        glUseProgram(vertexProgram->material->program);
-        if (updateUniforms) {
+        glUseProgram(material->program);
+        if (fullUpdate) {
             MaterialOptions options = {false, true, false, false, false, numTextures, vertexProgram, fragmentProgram};
-            ShaderMaterial_updateUniforms(vertexProgram->material, renderer, &options);
+            ShaderMaterial_updateUniforms(material, renderer, &options);
+        }
+    }
+
+    if (fullUpdate && material->location.attributes[COLOR_ARRAY_INDEX] != -1) {
+        GLVertexAttrib* colorAttrib = &clientState->vao->attribs[COLOR_ARRAY_INDEX];
+        if (!colorAttrib->state && !colorAttrib->boundArrayBuffer) {
+            GLRenderer_disableVertexAttribute(renderer, material->location.attributes[COLOR_ARRAY_INDEX]);
+            glVertexAttrib4fv(material->location.attributes[COLOR_ARRAY_INDEX], renderer->state.color);
         }
     }
     return true;
@@ -235,11 +258,9 @@ void GLRenderer_drawImmediate(GLRenderer* renderer) {
     GLClientState* clientState = &renderer->clientState;
 
     ShaderMaterial* material = NULL;
-    if (!clientState->program && !ARBProgram_isActive()) {
+    if (!clientState->program && !ARBProgram_isActive(GL_VERTEX_PROGRAM_ARB)) {
         uint8_t numTextures = 0;
-        for (int i = 0; i < MAX_TEXCOORDS; i++) {
-            if (renderer->state.enabledTextures[i][indexOfGLTarget(GL_TEXTURE_2D)]) numTextures++;
-        }
+        for (int i = 0; i < MAX_TEXTURES; i++) if (renderer->state.enabledTextures[i]) numTextures = i+1;
 
         bool pointSprite = renderer->state.point.sprite || renderer->state.point.smooth;
         MaterialOptions options = {renderer->state.lighting, renderer->state.alphaTest.enabled, renderer->state.fog.enabled, pointSprite, true, numTextures, NULL, NULL};
@@ -326,7 +347,7 @@ void GLRenderer_endImmediate(GLRenderer* renderer) {
         renderer->geometry.colors.position = 0;
         renderer->geometry.normals.position = 0;
 
-        for (int i = 0; i < MAX_TEXCOORDS; i++) renderer->geometry.texCoords[i].position = 0;
+        for (int i = 0; i < MAX_TEXTURES; i++) renderer->geometry.texCoords[i].position = 0;
     }
 }
 
@@ -370,7 +391,7 @@ void GLRenderer_addVertex(GLRenderer* renderer, GLfloat x, GLfloat y, GLfloat z,
         ArrayBuffer_putBytes(&renderer->geometry.normals, renderer->state.normal, 3 * sizeof(float));
     }
 
-    for (int i = 0; i < MAX_TEXCOORDS; i++) {
+    for (int i = 0; i < MAX_TEXTURES; i++) {
         if (renderer->geometry.texCoords[i].position > 0) {
             ArrayBuffer_putBytes(&renderer->geometry.texCoords[i], renderer->state.texCoords[i], 4 * sizeof(float));
         }
@@ -447,10 +468,11 @@ void GLRenderer_setCapabilityState(GLRenderer* renderer, GLenum cap, bool state,
         case GL_TEXTURE_1D:
         case GL_TEXTURE_2D:
         case GL_TEXTURE_3D:
-        case GL_TEXTURE_CUBE_MAP: {
-            GLuint target = parseTexTarget(cap);
+        case GL_TEXTURE_CUBE_MAP:
+        case GL_TEXTURE_RECTANGLE: {
             uint8_t activeTexture = renderer->clientState.activeTexture;
-            renderer->state.enabledTextures[activeTexture][indexOfGLTarget(target)] = state;
+            if (state) BITMASK_SET(renderer->state.enabledTextures[activeTexture], getTexTargetFlag(cap));
+            else BITMASK_UNSET(renderer->state.enabledTextures[activeTexture], getTexTargetFlag(cap));
             break;
         }
         case GL_FOG:
@@ -722,7 +744,7 @@ void GLRenderer_destroy(GLRenderer* renderer) {
     ArrayBuffer_free(&renderer->geometry.colors);
     ArrayBuffer_free(&renderer->geometry.normals);
 
-    for (int i = 0; i < MAX_TEXCOORDS; i++) {
+    for (int i = 0; i < MAX_TEXTURES; i++) {
         ArrayBuffer_free(&renderer->geometry.texCoords[i]);
     }
 
@@ -775,7 +797,9 @@ int GLRenderer_getParamsv(GLRenderer* renderer, GLenum pname, GLenum type, void*
             break;
         case GL_MAX_TEXTURE_UNITS:
         case GL_MAX_TEXTURE_COORDS:
-            if (params) *(GLint*)params = MAX_TEXCOORDS;
+        case GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS:
+        case GL_MAX_TEXTURE_IMAGE_UNITS:
+            if (params) *(GLint*)params = MAX_TEXTURES;
             break;
         case GL_MAX_RECTANGLE_TEXTURE_SIZE:
         case GL_MAX_TEXTURE_SIZE:
@@ -866,9 +890,28 @@ int GLRenderer_getParamsv(GLRenderer* renderer, GLenum pname, GLenum type, void*
         case GL_PROGRAM_ERROR_POSITION_ARB:
             if (params) *(GLint*)params = -1;
             break;
-        case GL_POINT_SIZE_RANGE:
-            pname = GL_ALIASED_POINT_SIZE_RANGE;
+        case GL_TEXTURE_BINDING_1D:
+        case GL_TEXTURE_BINDING_2D:
+        case GL_TEXTURE_BINDING_3D:
+        case GL_TEXTURE_BINDING_CUBE_MAP:
+            if (params) *(GLuint*)params = GLTexture_getBindingId(getTexTargetForBinding(pname));
+            break;
+        case GL_TEXTURE_1D:
+        case GL_TEXTURE_2D:
+        case GL_TEXTURE_3D:
+        case GL_TEXTURE_CUBE_MAP:
+        case GL_TEXTURE_RECTANGLE: {
+            uint8_t activeTexture = renderer->clientState.activeTexture;
+            uint8_t flags = renderer->state.enabledTextures[activeTexture];
+            if (params) *(GLboolean*)params = (flags & getTexTargetFlag(pname)) ? GL_TRUE : GL_FALSE;
+            paramSize = sizeof(GLboolean);
+            break;
+        }
+        case GL_ACTIVE_TEXTURE:
+            if (params) *(GLenum*)params = GL_TEXTURE0 + renderer->clientState.activeTexture;
+            break;
         default:
+            if (pname == GL_POINT_SIZE_RANGE) pname = GL_ALIASED_POINT_SIZE_RANGE;
             if (pname >= GL_LIGHT0 && pname <= GL_LIGHT7) {
                 int index = pname - GL_LIGHT0;
                 if (params) *(GLboolean*)params = index < MAX_LIGHTS ? renderer->lights[index].enabled : 0;
@@ -905,9 +948,11 @@ int GLRenderer_getParamsv(GLRenderer* renderer, GLenum pname, GLenum type, void*
                     break;
             }
 
-            if (params && (pname == GL_FRAMEBUFFER_BINDING || pname == GL_DRAW_FRAMEBUFFER_BINDING || pname == GL_READ_FRAMEBUFFER_BINDING)) {
+            if (params && (pname == GL_FRAMEBUFFER_BINDING ||
+                           pname == GL_DRAW_FRAMEBUFFER_BINDING ||
+                           pname == GL_READ_FRAMEBUFFER_BINDING)) {
                 int framebuffer = *(GLint*)params;
-                if (framebuffer == renderer->displayBuffers[0] || framebuffer == renderer->displayBuffers[1]) {
+                if (framebuffer == renderer->displayBuffer) {
                     *(GLint*)params = 0;
                 }
             }
@@ -964,6 +1009,14 @@ void GLRenderer_drawPixels(GLRenderer* renderer, GLsizei width, GLsizei height, 
 
     initRaster(renderer);
 
+    GLboolean oldEnabled;
+    GLRenderer_getParamsv(renderer, GL_TEXTURE_2D, GL_BOOL, &oldEnabled);
+    GLRenderer_setCapabilityState(renderer, GL_TEXTURE_2D, true, -1);
+
+    GLenum oldActiveTexture;
+    GLRenderer_getParamsv(renderer, GL_ACTIVE_TEXTURE, GL_BOOL, &oldActiveTexture);
+    GLTexture_setActiveUnit(GL_TEXTURE0);
+
     GLRaster* raster = renderer->raster;
     glBindTexture(GL_TEXTURE_2D, raster->textureId);
     glTexImage2D(GL_TEXTURE_2D, 0, internalformat, width, height, 0, format, type, pixels);
@@ -1000,6 +1053,9 @@ void GLRenderer_drawPixels(GLRenderer* renderer, GLsizei width, GLsizei height, 
 
     GLTexture* texture = GLTexture_getBound(GL_TEXTURE_2D);
     glBindTexture(GL_TEXTURE_2D, texture ? texture->id : 0);
+
+    GLTexture_setActiveUnit(oldActiveTexture);
+    GLRenderer_setCapabilityState(renderer, GL_TEXTURE_2D, oldEnabled, -1);
 }
 
 void GLRenderer_setSamplerParameter(GLRenderer* renderer, GLuint sampler, GLenum pname, GLfloat* params) {
@@ -1235,26 +1291,11 @@ void* GLRenderer_getCompressedTexImage(GLRenderer* renderer, GLenum target, GLin
 }
 
 void GLRenderer_setDrawBuffer(GLRenderer* renderer, GLenum drawBuffer) {
-    if (drawBuffer == GL_FRONT_LEFT || drawBuffer == GL_FRONT_RIGHT) {
-        drawBuffer = GL_FRONT;
-    }
-    else if (drawBuffer == GL_BACK_LEFT || drawBuffer == GL_BACK_RIGHT) {
-        drawBuffer = GL_BACK;
-    }
-    else if (drawBuffer == GL_NONE || (drawBuffer >= GL_COLOR_ATTACHMENT0 && drawBuffer <= GL_COLOR_ATTACHMENT31)) {
+    if (drawBuffer == GL_NONE || (drawBuffer >= GL_COLOR_ATTACHMENT0 && drawBuffer <= GL_COLOR_ATTACHMENT31)) {
         GLFramebuffer_setDrawBuffers(1, &drawBuffer);
-        return;
     }
-
-    int framebuffer;
-    if (drawBuffer == GL_FRONT) {
-        framebuffer = renderer->displayBuffers[0];
-        renderer->swapBuffers = false;
-    }
-    else framebuffer = renderer->displayBuffers[1];
-
-    if (framebuffer != renderer->clientState.framebuffer[indexOfGLTarget(GL_FRAMEBUFFER)]) {
-        GLFramebuffer_bind(GL_FRAMEBUFFER, framebuffer);
+    else if (renderer->displayBuffer != renderer->clientState.framebuffer[indexOfGLTarget(GL_FRAMEBUFFER)]) {
+        GLFramebuffer_bind(GL_FRAMEBUFFER, renderer->displayBuffer);
     }
 }
 
