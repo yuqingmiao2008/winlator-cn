@@ -35,12 +35,20 @@ static void setupExposedDeviceExtensions(VkContext* context) {
     context->disabledDeviceExtensions = NULL;
 
     if (strcmp(context->engineName, "DXVK") == 0) {
-        if (context->driverID == VK_DRIVER_ID_ARM_PROPRIETARY) {
+        bool isMaliDevice = context->driverID == VK_DRIVER_ID_ARM_PROPRIETARY;
+        bool isXclipseDevice = context->driverID == VK_DRIVER_ID_SAMSUNG_PROPRIETARY;
+        bool isAdrenoDevice = context->driverID == VK_DRIVER_ID_QUALCOMM_PROPRIETARY;
+
+        if ((isMaliDevice || isXclipseDevice) && context->engineVersion < MAKE_ENGINE_VERSION(2, 0, 0)) {
             const char* disabledDeviceExtensions[] = {"VK_EXT_extended_dynamic_state", "VK_EXT_extended_dynamic_state2", "VK_EXT_extended_dynamic_state3", "VK_EXT_hdr_metadata", "VK_EXT_swapchain_maintenance1"};
             context->disabledDeviceExtensions = ArrayList_fromStrings(disabledDeviceExtensions, ARRAY_SIZE(disabledDeviceExtensions));
         }
-        else {
+        else if (isAdrenoDevice) {
             const char* disabledDeviceExtensions[] = {"VK_KHR_shader_float_controls", "VK_EXT_hdr_metadata", "VK_EXT_swapchain_maintenance1"};
+            context->disabledDeviceExtensions = ArrayList_fromStrings(disabledDeviceExtensions, ARRAY_SIZE(disabledDeviceExtensions));
+        }
+        else {
+            const char* disabledDeviceExtensions[] = {"VK_EXT_hdr_metadata", "VK_EXT_swapchain_maintenance1"};
             context->disabledDeviceExtensions = ArrayList_fromStrings(disabledDeviceExtensions, ARRAY_SIZE(disabledDeviceExtensions));
         }
     }
@@ -129,7 +137,7 @@ void initVulkanDevice(VkContext* context, VkPhysicalDevice physicalDevice, VkDev
     VkPhysicalDeviceFeatures supportedFeatures = {0};
     vulkanWrapper.vkGetPhysicalDeviceFeatures(physicalDevice, &supportedFeatures);
 
-    if (!context->textureDecoder) context->textureDecoder = TextureDecoder_create(context, &supportedFeatures);
+    if (!context->textureDecoder) context->textureDecoder = TextureDecoder_create(context, physicalDevice, device, &supportedFeatures);
     if (!context->shaderInspector) context->shaderInspector = ShaderInspector_create(context, physicalDevice, &supportedFeatures);
     if (context->textureDecoder) context->textureDecoder->threadPool = context->threadPool;
 }

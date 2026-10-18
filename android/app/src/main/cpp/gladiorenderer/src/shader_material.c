@@ -28,12 +28,12 @@ static void setupMaterial(ShaderMaterial* material, MaterialOptions* options) {
         material->location.textureMatrix = glGetUniformLocation(material->program, "gd_TextureMatrix");
 
         const char* texEnvStructNames[] = {"mode", "color", "combineRGBA", "rgbaScale", "sourceRGBA", "operandRGBA", "lodBias"};
-        for (int i = 0; i < MAX_TEXCOORDS; i++) {
+        for (int i = 0; i < MAX_TEXTURES; i++) {
             material->location.texture[i] = -1;
             for (int j = 0; j < ARRAY_SIZE(texEnvStructNames); j++) material->location.texEnv[i][j] = -1;
         }
 
-        for (int i = 0; i < MAX_TEXCOORDS; i++) {
+        for (int i = 0; i < MAX_TEXTURES; i++) {
             sprintf(uniformName, "gd_Texture%d", i);
             material->location.texture[i] = glGetUniformLocation(material->program, uniformName);
 
@@ -43,7 +43,7 @@ static void setupMaterial(ShaderMaterial* material, MaterialOptions* options) {
             }
         }
 
-        for (int i = TEXCOORD_ARRAY_INDEX, j = 0; j < MAX_TEXCOORDS; j++, i++) {
+        for (int i = TEXCOORD_ARRAY_INDEX, j = 0; j < MAX_TEXTURES; j++, i++) {
             char attribName[32];
             sprintf(attribName, "gd_MultiTexCoord%d", j);
             material->location.attributes[i] = glGetAttribLocation(material->program, attribName);
@@ -409,24 +409,28 @@ static char* defineShaderOptions(GLenum type, char* source, MaterialOptions* opt
     bool useTexture = options->numTextures >= 1;
     if (useTexture) {
         if (type == GL_VERTEX_SHADER) {
-            ArrayBuffer replaceBufs[3] = {0};
+            ArrayBuffer replaces[3] = {0};
             for (int i = 0; i < options->numTextures; i++) {
-                ArrayBuffer_putString(&replaceBufs[0], "in vec4 gd_MultiTexCoord%d;\n", i);
-                ArrayBuffer_putString(&replaceBufs[1], "out vec4 gd_TexCoord%d;\n", i);
-                ArrayBuffer_putString(&replaceBufs[2], "gd_TexCoord%d = gd_TextureMatrix * gd_MultiTexCoord%d;\n", i, i);
+                ArrayBuffer_putString(&replaces[0], "in vec4 gd_MultiTexCoord%d;\n", i);
+                ArrayBuffer_putString(&replaces[1], "out vec4 gd_TexCoord%d;\n", i);
+                ArrayBuffer_putString(&replaces[2], "gd_TexCoord%d = gd_TextureMatrix * gd_MultiTexCoord%d;\n", i, i);
             }
 
-            char* search[] = {"in vec4 gd_MultiTexCoord;", "out vec4 gd_TexCoord;", "gd_TexCoord = gd_TextureMatrix * gd_MultiTexCoord;"};
+            char* searches[] = {
+                "in vec4 gd_MultiTexCoord;",
+                "out vec4 gd_TexCoord;",
+                "gd_TexCoord = gd_TextureMatrix * gd_MultiTexCoord;"
+            };
             char* oldSource = NULL;
-            for (int i = 0; i < ARRAY_SIZE(replaceBufs); i++) {
-                ArrayBuffer_put(&replaceBufs[i], '\0');
-                source = str_replace(search[i], replaceBufs[i].buffer, oldSource = source);
+            for (int i = 0; i < ARRAY_SIZE(replaces); i++) {
+                ArrayBuffer_put(&replaces[i], '\0');
+                source = str_replace(searches[i], replaces[i].buffer, oldSource = source);
                 free(oldSource);
-                ArrayBuffer_free(&replaceBufs[i]);
+                ArrayBuffer_free(&replaces[i]);
             }
         }
         else if (type == GL_FRAGMENT_SHADER) {
-            ArrayBuffer replaceBufs[4] = {0};
+            ArrayBuffer replaces[4] = {0};
             for (int i = 0; i < options->numTextures; i++) {
                 if (options->fragmentProgram) {
                     char* samplerType;
@@ -441,21 +445,27 @@ static char* defineShaderOptions(GLenum type, char* source, MaterialOptions* opt
                             samplerType = "sampler2D";
                             break;
                     }
-                    ArrayBuffer_putString(&replaceBufs[0], "uniform %s gd_Texture%d;\n", samplerType, i);
+                    ArrayBuffer_putString(&replaces[0], "uniform %s gd_Texture%d;\n", samplerType, i);
                 }
-                else ArrayBuffer_putString(&replaceBufs[0], "uniform sampler2D gd_Texture%d;\n", i);
-                ArrayBuffer_putString(&replaceBufs[1], "uniform gd_TexEnvParameters gd_TexEnv%d;\n", i);
-                ArrayBuffer_putString(&replaceBufs[2], "in vec4 gd_TexCoord%d;\n", i);
-                ArrayBuffer_putString(&replaceBufs[3], "finalColor = applyTexEnv(gd_Texture%d, gd_TexCoord%d, gd_TexEnv%d, finalColor);\n", i, i, i);
+                else ArrayBuffer_putString(&replaces[0], "uniform sampler2D gd_Texture%d;\n", i);
+                ArrayBuffer_putString(&replaces[1], "uniform gd_TexEnvParameters gd_TexEnv%d;\n", i);
+                ArrayBuffer_putString(&replaces[2], "in vec4 gd_TexCoord%d;\n", i);
+
+                ArrayBuffer_putString(&replaces[3], "finalColor = gd_TexEnv%d.mode != 0 ? applyTexEnv(gd_Texture%d, gd_TexCoord%d, gd_TexEnv%d, finalColor) : finalColor;\n", i, i, i, i);
             }
 
-            char* search[] = {"uniform sampler2D gd_Texture;", "uniform gd_TexEnvParameters gd_TexEnv;", "in vec4 gd_TexCoord;", "finalColor = applyTexEnv(gd_Texture, gd_TexCoord, gd_TexEnv, finalColor);"};
+            char* searches[] = {
+                "uniform sampler2D gd_Texture;",
+                "uniform gd_TexEnvParameters gd_TexEnv;",
+                "in vec4 gd_TexCoord;",
+                "finalColor = applyTexEnv(gd_Texture, gd_TexCoord, gd_TexEnv, finalColor);"
+            };
             char* oldSource = NULL;
-            for (int i = 0; i < ARRAY_SIZE(replaceBufs); i++) {
-                ArrayBuffer_put(&replaceBufs[i], '\0');
-                source = str_replace(search[i], replaceBufs[i].buffer, oldSource = source);
+            for (int i = 0; i < ARRAY_SIZE(replaces); i++) {
+                ArrayBuffer_put(&replaces[i], '\0');
+                source = str_replace(searches[i], replaces[i].buffer, oldSource = source);
                 free(oldSource);
-                ArrayBuffer_free(&replaceBufs[i]);
+                ArrayBuffer_free(&replaces[i]);
             }
         }
     }
@@ -633,25 +643,37 @@ void ShaderMaterial_updateUniforms(ShaderMaterial* material, GLRenderer* rendere
     }
 
     if (options->numTextures >= 1) {
-        glUniformMatrix4fv(material->location.textureMatrix, 1, GL_FALSE, GLRenderer_getMatrixFromStack(renderer, TEXTURE_MATRIX_INDEX));
+        if (!options->vertexProgram) {
+            glUniformMatrix4fv(material->location.textureMatrix, 1, GL_FALSE, GLRenderer_getMatrixFromStack(renderer, TEXTURE_MATRIX_INDEX));
+        }
 
-        for (int i = 0; i < MAX_TEXCOORDS; i++) {
+        for (int i = 0; i < MAX_TEXTURES; i++) {
             if (material->location.texture[i] != -1) {
                 glUniform1i(material->location.texture[i], i);
 
-                glUniform1i(material->location.texEnv[i][0], renderer->state.texEnv[i].mode);
+                GLTexture* texture = renderer->clientState.texture[i][indexOfGLTarget(GL_TEXTURE_2D)];
+                if (texture && texture->originFormat == GL_ALPHA) {
+                    glUniform1i(material->location.texEnv[i][0], renderer->state.enabledTextures[i] ? GL_COMBINE : 0);
+                    glUniform2i(material->location.texEnv[i][2], GL_REPLACE, renderer->state.texEnv[i].mode);
+                    glUniform4i(material->location.texEnv[i][4], GL_PREVIOUS, GL_PREVIOUS, GL_TEXTURE, GL_PREVIOUS);
+                    glUniform4i(material->location.texEnv[i][5], GL_SRC_COLOR, GL_SRC_COLOR, GL_SRC_ALPHA, GL_SRC_ALPHA);
+                }
+                else {
+                    glUniform1i(material->location.texEnv[i][0], renderer->state.enabledTextures[i] ? renderer->state.texEnv[i].mode : 0);
+                    glUniform2iv(material->location.texEnv[i][2], 1, renderer->state.texEnv[i].combineRGBA);
+                    glUniform4iv(material->location.texEnv[i][4], 1, renderer->state.texEnv[i].sourceRGBA);
+                    glUniform4iv(material->location.texEnv[i][5], 1, renderer->state.texEnv[i].operandRGBA);
+                }
+
                 glUniform4fv(material->location.texEnv[i][1], 1, renderer->state.texEnv[i].color);
-                glUniform2iv(material->location.texEnv[i][2], 1, renderer->state.texEnv[i].combineRGBA);
                 glUniform2fv(material->location.texEnv[i][3], 1, renderer->state.texEnv[i].rgbaScale);
-                glUniform4iv(material->location.texEnv[i][4], 1, renderer->state.texEnv[i].sourceRGBA);
-                glUniform4iv(material->location.texEnv[i][5], 1, renderer->state.texEnv[i].operandRGBA);
                 glUniform1f(material->location.texEnv[i][6], renderer->state.texEnv[i].lodBias);
             }
         }
     }
 
     if (options->alphaTest) {
-        glUniform2f(material->location.alphaTest, renderer->state.alphaTest.func, renderer->state.alphaTest.ref);
+        glUniform2f(material->location.alphaTest, renderer->state.alphaTest.enabled ? renderer->state.alphaTest.func : GL_ALWAYS, renderer->state.alphaTest.ref);
     }
 
     if (options->fog) {

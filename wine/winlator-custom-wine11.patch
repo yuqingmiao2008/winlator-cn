@@ -11061,7 +11061,7 @@ index 170bdba665da6bc2d7d435f7d5179230050dba33..f1d55cc3e0e2f50e6c57913f86792ba1
                                            void *key_data, UINT key_size, void *rw_data, UINT rw_size,
                                            void *dynamic_data, UINT dynamic_size, void *static_data, UINT static_size,
 diff --git a/dlls/ntdll/unix/env.c b/dlls/ntdll/unix/env.c
-index 460888b95df3a1e5398949573146058d66fb6244..9b667ceb3fd818b3e9285675c5b281349a30f4ba 100644
+index 460888b..0ba7b68 100644
 --- a/dlls/ntdll/unix/env.c
 +++ b/dlls/ntdll/unix/env.c
 @@ -1029,6 +1029,7 @@ static void add_system_dll_path_var( WCHAR **env, SIZE_T *pos, SIZE_T *size )
@@ -11130,7 +11130,7 @@ index 460888b95df3a1e5398949573146058d66fb6244..9b667ceb3fd818b3e9285675c5b28134
 +    {
 +        SIZE_T len = strlen(wine_args) + 1;
 +        extra_args_len = len * sizeof(WCHAR);
-+        extra_args = malloc( extra_args_len );
++        extra_args = malloc( extra_args_len + sizeof(WCHAR) );
 +        ntdll_umbstowcs( wine_args, len, extra_args + 1, len );
 +        extra_args[0] = L' ';
 +        unsetenv( "WINEARGS" );
@@ -11145,13 +11145,11 @@ index 460888b95df3a1e5398949573146058d66fb6244..9b667ceb3fd818b3e9285675c5b28134
              + info->title_len + sizeof(WCHAR)
              + info->desktop_len + sizeof(WCHAR)
              + info->shellinfo_len + sizeof(WCHAR)
-@@ -2092,7 +2126,22 @@ void init_startup_info(void)
+@@ -2092,7 +2126,20 @@ void init_startup_info(void)
  
      if (info->dllpath_len) copy_unicode_string( &src, &dst, &params->DllPath, info->dllpath_len );
      copy_dos_path_string( &src, &dst, &params->ImagePathName, &nt_name, info->imagepath_len );
 -    copy_unicode_string( &src, &dst, &params->CommandLine, info->cmdline_len );
-+
-+    copy_unicode_string( &src, &dst, &params->ImagePathName, info->imagepath_len );
 +
 +    if (extra_args && info->cmdline_len > 0)
 +    {
@@ -29174,6 +29172,25 @@ index 553a47b88067dc46a1f738aeda1dc7e60ebc6efb..d0d1421aeb65f7e61ecd29f8197d5e2c
          ret = TRUE;
      else
          WINE_ERR("Unable to wait for parent process, error %ld\n", GetLastError());
+diff --git a/server/request.c b/server/request.c
+index 5135ed5..50ab0d7 100644
+--- a/server/request.c
++++ b/server/request.c
+@@ -624,8 +624,12 @@ static char *create_server_dir( int force )
+     if (asprintf( &base_dir, "%s/.wineserver", config_dir ) == -1)
+         fatal_error( "out of memory\n" );
+ #else
+-    if (asprintf( &base_dir, "/tmp/.wine-%u", getuid() ) == -1)
+-        fatal_error( "out of memory\n" );
++    {
++        /* Winlator: 与客户端 (dlls/ntdll/unix/server.c init_server_dir) 保持一致, 从 TMPDIR 定位 */
++        const char *tmpdir = getenv( "TMPDIR" );
++        if (asprintf( &base_dir, "%s/.wine-%u", (tmpdir && *tmpdir) ? tmpdir : "/tmp", getuid() ) == -1)
++            fatal_error( "out of memory\n" );
++    }
+ #endif
+     create_dir( base_dir, &st2 );
+ 
 diff --git a/server/unicode.c b/server/unicode.c
 index bb39b55e50c3180867463b0edff548c6a1a9d793..33c1a5a641a674f42fe7ccc1429e9501a4331463 100644
 --- a/server/unicode.c

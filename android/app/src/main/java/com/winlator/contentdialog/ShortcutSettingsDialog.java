@@ -131,50 +131,46 @@ public class ShortcutSettingsDialog extends ContentDialog {
 
         setOnConfirmCallback(() -> {
             String name = etName.getText().toString().trim();
-            if (!shortcut.name.equals(name) && !name.isEmpty()) {
-                renameShortcut(name);
-            }
-            else {
-                String graphicsDriver = graphicsDriverPicker.getGraphicsDriver();
-                String dxwrapper = dxwrapperPicker.getDXWrapper();
-                String dxwrapperConfig = dxwrapperPicker.getDXWrapperConfig();
-                String graphicsDriverConfig = graphicsDriverPicker.getGraphicsDriverConfig();
-                String audioDriverConfig = vAudioDriverConfig.getTag().toString();
-                String audioDriver = StringUtils.parseIdentifier(sAudioDriver.getSelectedItem());
-                String screenSize = ContainerDetailFragment.getScreenSize(getContentView());
+            String graphicsDriver = graphicsDriverPicker.getGraphicsDriver();
+            String dxwrapper = dxwrapperPicker.getDXWrapper();
+            String dxwrapperConfig = dxwrapperPicker.getDXWrapperConfig();
+            String graphicsDriverConfig = graphicsDriverPicker.getGraphicsDriverConfig();
+            String audioDriverConfig = vAudioDriverConfig.getTag().toString();
+            String audioDriver = StringUtils.parseIdentifier(sAudioDriver.getSelectedItem());
+            String screenSize = ContainerDetailFragment.getScreenSize(getContentView());
 
-                String execArgs = etExecArgs.getText().toString();
-                shortcut.putExtra("execArgs", !execArgs.isEmpty() ? execArgs : null);
-                shortcut.putExtra("screenSize", !screenSize.equals(shortcut.container.getScreenSize()) ? screenSize : null);
-                shortcut.putExtra("graphicsDriver", !graphicsDriver.equals(shortcut.container.getGraphicsDriver()) ? graphicsDriver : null);
-                shortcut.putExtra("dxwrapper", !dxwrapper.equals(shortcut.container.getDXWrapper()) ? dxwrapper : null);
-                shortcut.putExtra("dxwrapperConfig", !dxwrapperConfig.equals(shortcut.container.getDXWrapperConfig()) ? dxwrapperConfig : null);
-                shortcut.putExtra("graphicsDriverConfig", !graphicsDriverConfig.equals(shortcut.container.getGraphicsDriverConfig()) ? graphicsDriverConfig : null);
-                shortcut.putExtra("audioDriver", !audioDriver.equals(shortcut.container.getAudioDriver())? audioDriver : null);
-                shortcut.putExtra("audioDriverConfig", !audioDriverConfig.equals(shortcut.container.getAudioDriverConfig()) ? audioDriverConfig : null);
-                shortcut.putExtra("forceFullscreen", cbForceFullscreen.isChecked() ? "1" : null);
+            String execArgs = etExecArgs.getText().toString();
+            shortcut.putExtra("execArgs", !execArgs.isEmpty() ? execArgs : null);
+            shortcut.putExtra("screenSize", !screenSize.equals(shortcut.container.getScreenSize()) ? screenSize : null);
+            shortcut.putExtra("graphicsDriver", !graphicsDriver.equals(shortcut.container.getGraphicsDriver()) ? graphicsDriver : null);
+            shortcut.putExtra("dxwrapper", !dxwrapper.equals(shortcut.container.getDXWrapper()) ? dxwrapper : null);
+            shortcut.putExtra("dxwrapperConfig", !dxwrapperConfig.equals(shortcut.container.getDXWrapperConfig()) ? dxwrapperConfig : null);
+            shortcut.putExtra("graphicsDriverConfig", !graphicsDriverConfig.equals(shortcut.container.getGraphicsDriverConfig()) ? graphicsDriverConfig : null);
+            shortcut.putExtra("audioDriver", !audioDriver.equals(shortcut.container.getAudioDriver())? audioDriver : null);
+            shortcut.putExtra("audioDriverConfig", !audioDriverConfig.equals(shortcut.container.getAudioDriverConfig()) ? audioDriverConfig : null);
+            shortcut.putExtra("forceFullscreen", cbForceFullscreen.isChecked() ? "1" : null);
 
-                String wincomponents = ContainerDetailFragment.getWinComponents(getContentView());
-                shortcut.putExtra("wincomponents", !wincomponents.equals(shortcut.container.getWinComponents()) ? wincomponents : null);
+            String wincomponents = ContainerDetailFragment.getWinComponents(getContentView());
+            shortcut.putExtra("wincomponents", !wincomponents.equals(shortcut.container.getWinComponents()) ? wincomponents : null);
 
-                String envVars = envVarsView.getEnvVars();
-                shortcut.putExtra("envVars", !envVars.isEmpty() ? envVars : null);
+            String envVars = envVarsView.getEnvVars();
+            shortcut.putExtra("envVars", !envVars.isEmpty() ? envVars : null);
 
-                String box64Preset = Box64PresetManager.getSpinnerSelectedId(sBox64Preset);
-                shortcut.putExtra("box64Preset", !box64Preset.equals(shortcut.container.getBox64Preset()) ? box64Preset : null);
+            String box64Preset = Box64PresetManager.getSpinnerSelectedId(sBox64Preset);
+            shortcut.putExtra("box64Preset", !box64Preset.equals(shortcut.container.getBox64Preset()) ? box64Preset : null);
 
-                ArrayList<ControlsProfile> profiles = inputControlsManager.getProfiles(true);
-                int controlsProfile = sControlsProfile.getSelectedItemPosition() > 0 ? profiles.get(sControlsProfile.getSelectedItemPosition()-1).id : 0;
-                shortcut.putExtra("controlsProfile", controlsProfile > 0 ? String.valueOf(controlsProfile) : null);
+            ArrayList<ControlsProfile> profiles = inputControlsManager.getProfiles(true);
+            int controlsProfile = sControlsProfile.getSelectedItemPosition() > 0 ? profiles.get(sControlsProfile.getSelectedItemPosition()-1).id : 0;
+            shortcut.putExtra("controlsProfile", controlsProfile > 0 ? String.valueOf(controlsProfile) : null);
 
-                int dinputMapperType = sDInputMapperType.getSelectedItemPosition();
-                shortcut.putExtra("dinputMapperType", dinputMapperType != GamepadHandler.DINPUT_MAPPER_TYPE_XINPUT ? String.valueOf(dinputMapperType) : null);
+            int dinputMapperType = sDInputMapperType.getSelectedItemPosition();
+            shortcut.putExtra("dinputMapperType", dinputMapperType != GamepadHandler.DINPUT_MAPPER_TYPE_XINPUT ? String.valueOf(dinputMapperType) : null);
 
-                shortcut.saveData();
+            shortcut.saveData();
+            if (!shortcut.name.equals(name) && !name.isEmpty()) renameShortcut(name);
 
-                boolean requireRestart = graphicsDriver.equals(GraphicsDrivers.VORTEK) && VortekConfigDialog.isRequireRestart(oldGraphicsDriverConfig, graphicsDriverConfig);
-                if (requireRestart) ContentDialog.confirm(context, R.string.the_settings_have_been_changed_do_you_want_to_restart_the_app, () -> AppUtils.restartApplication(context));
-            }
+            boolean requireRestart = graphicsDriver.equals(GraphicsDrivers.VORTEK) && VortekConfigDialog.isRequireRestart(oldGraphicsDriverConfig, graphicsDriverConfig);
+            if (requireRestart) ContentDialog.confirm(context, R.string.the_settings_have_been_changed_do_you_want_to_restart_the_app, () -> AppUtils.restartApplication(context));
         });
     }
 
