@@ -42,9 +42,9 @@ jobs:
           TAG="${{ inputs.tag }}"
           ARGS=(--title "构建 a296428 (20261018, Wine 11.15)"
                 --notes "云端构建 (workflow_dispatch, wine-11.15), 由 Actions 内部转存发布。
-- 基于 commit a296428 (main)
-- Wine 11 编译 ~80min (本次未命中缓存) + APK 打包 ~25min
-- 详细日志: https://github.com/yuqingmiao2008/winlator-cn/actions/runs/${{ inputs.run_id }}")
+            - 基于 commit a296428 (main)
+            - Wine 11 编译 ~80min (本次未命中缓存) + APK 打包 ~25min
+            - 详细日志: https://github.com/yuqingmiao2008/winlator-cn/actions/runs/${{ inputs.run_id }}")
           if ! gh release view "$TAG" -R "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             gh release create "$TAG" "${ARGS[@]}" --draft -R "$GITHUB_REPOSITORY"
           fi
