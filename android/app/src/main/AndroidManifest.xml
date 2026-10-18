@@ -72,5 +72,18 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths"/>
         </provider>
+
+        <!-- Issue #1: rootfs/home 文档提供器, 供外部文件管理器 / SAF 浏览读写容器内文件 -->
+        <provider
+            android:name="com.winlator.core.RootfsDocumentsProvider"
+            android:authorities="${applicationId}.rootfs.documents"
+            android:exported="true"
+            android:grantUriPermissions="true"
+            android:permission="android.permission.MANAGE_DOCUMENTS">
+
+            <intent-filter>
+                <action android:name="android.content.action.DOCUMENTS_PROVIDER"/>
+            </intent-filter>
+        </provider>
     </application>
 </manifest>
