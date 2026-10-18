@@ -9,6 +9,10 @@ on:
       tag:
         description: "目标 Release 标签"
         required: true
+      apk_name:
+        description: "APK 目标文件名 (可选, 留空保持原名)"
+        required: false
+        default: ""
 
 permissions:
   contents: write
@@ -31,6 +35,11 @@ jobs:
         run: |
           cd /tmp/apk
           f=$(ls *.apk | head -1)
+          NAME="${{ inputs.apk_name }}"
+          if [ -n "$NAME" ] && [ "$NAME" != "$(basename "$f")" ]; then
+            mv "$f" "$NAME"
+            f="$NAME"
+          fi
           sha256sum "$f" > "$f.sha256"
           cat "$f.sha256" | cut -c1-16
 
