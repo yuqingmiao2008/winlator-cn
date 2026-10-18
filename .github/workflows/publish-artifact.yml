@@ -1,0 +1,54 @@
+name: Publish APK artifact to Release (云端转发)
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: "包含 APK 的 Actions run ID"
+        required: true
+      tag:
+        description: "目标 Release 标签"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: 下载指定 run 的 APK artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euxo pipefail
+          gh run download "${{ inputs.run_id }}" -R "$GITHUB_REPOSITORY" \
+            -n winlator-cn-wine11-apk -D /tmp/apk
+          ls -lh /tmp/apk
+
+      - name: 生成 sha256 校验和
+        run: |
+          cd /tmp/apk
+          f=$(ls *.apk | head -1)
+          sha256sum "$f" > "$f.sha256"
+          cat "$f.sha256" | cut -c1-16
+
+      - name: 创建草稿 Release 并上传 APK
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cd /tmp/apk
+          TAG="${{ inputs.tag }}"
+          ARGS=(--title "构建 a296428 (20261018, Wine 11.15)"
+                --notes "云端构建 (workflow_dispatch, wine-11.15), 由 Actions 内部转存发布。
+- 基于 commit a296428 (main)
+- Wine 11 编译 ~80min (本次未命中缓存) + APK 打包 ~25min
+- 详细日志: https://github.com/yuqingmiao2008/winlator-cn/actions/runs/${{ inputs.run_id }}")
+          if ! gh release view "$TAG" -R "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release create "$TAG" "${ARGS[@]}" --draft -R "$GITHUB_REPOSITORY"
+          fi
+          gh release upload "$TAG" *.apk *.sha256 --clobber --repo "$GITHUB_REPOSITORY"
+          echo "== 发布结果 =="
+          gh release view "$TAG" -R "$GITHUB_REPOSITORY" --json tagName,isDraft,assets \
+            --jq '{tag: .tagName, draft: .isDraft, assets: [.assets[] | {name, size}]}'
