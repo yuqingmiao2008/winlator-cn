@@ -22,21 +22,23 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
-      - name: 下载指定 run 的 APK artifact
+      - name: 下载指定 run 的全部 artifact (自动探测 APK)
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euxo pipefail
-          gh run download "${{ inputs.run_id }}" -R "$GITHUB_REPOSITORY" \
-            -n winlator-cn-wine11-apk -D /tmp/apk
-          ls -lh /tmp/apk
+          gh run download "${{ inputs.run_id }}" -R "$GITHUB_REPOSITORY" -D /tmp/apk
+          APK=$(find /tmp/apk -name '*.apk' | head -1)
+          test -n "$APK"
+          ls -lh "$APK"
 
       - name: 生成 sha256 校验和
         run: |
-          cd /tmp/apk
-          f=$(ls *.apk | head -1)
+          APK=$(find /tmp/apk -name '*.apk' | head -1)
+          cd "$(dirname "$APK")"
+          f=$(basename "$APK")
           NAME="${{ inputs.apk_name }}"
-          if [ -n "$NAME" ] && [ "$NAME" != "$(basename "$f")" ]; then
+          if [ -n "$NAME" ] && [ "$NAME" != "$f" ]; then
             mv "$f" "$NAME"
             f="$NAME"
           fi
@@ -49,15 +51,12 @@ jobs:
         run: |
           cd /tmp/apk
           TAG="${{ inputs.tag }}"
-          ARGS=(--title "构建 a296428 (20261018, Wine 11.15)"
-                --notes "云端构建 (workflow_dispatch, wine-11.15), 由 Actions 内部转存发布。
-            - 基于 commit a296428 (main)
-            - Wine 11 编译 ~80min (本次未命中缓存) + APK 打包 ~25min
-            - 详细日志: https://github.com/yuqingmiao2008/winlator-cn/actions/runs/${{ inputs.run_id }}")
           if ! gh release view "$TAG" -R "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            gh release create "$TAG" "${ARGS[@]}" --draft -R "$GITHUB_REPOSITORY"
+            gh release create "$TAG" --draft \
+              --title "构建 ${TAG#dev-}" -R "$GITHUB_REPOSITORY"
           fi
-          gh release upload "$TAG" *.apk *.sha256 --clobber --repo "$GITHUB_REPOSITORY"
+          gh release upload "$TAG" $(find . -name '*.apk' -o -name '*.sha256') \
+            --clobber -R "$GITHUB_REPOSITORY"
           echo "== 发布结果 =="
           gh release view "$TAG" -R "$GITHUB_REPOSITORY" --json tagName,isDraft,assets \
             --jq '{tag: .tagName, draft: .isDraft, assets: [.assets[] | {name, size}]}'
