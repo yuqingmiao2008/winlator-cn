@@ -3,6 +3,7 @@ package com.winlator.core;
 import android.os.Process;
 import android.system.Os;
 import android.system.OsConstants;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 
@@ -25,6 +26,7 @@ import java.util.concurrent.Executors;
 import java.util.regex.Pattern;
 
 public abstract class ProcessHelper {
+    private static final String TAG = "WinlatorCN";
     public enum PState {RUNNING, SLEEPING, WAITING, ZOMBIE, STOPPED, DEAD, OTHER}
     private static final ArrayList<Callback<String>> debugCallbacks = new ArrayList<>();
 
@@ -89,7 +91,9 @@ public abstract class ProcessHelper {
 
             if (terminationCallback != null) createWaitForThread(process, terminationCallback);
         }
-        catch (Exception e) {}
+        catch (Exception e) {
+            Log.e(TAG, "exec 失败: "+command, e);
+        }
         return pid;
     }
 
