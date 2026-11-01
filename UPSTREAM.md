@@ -72,17 +72,25 @@
 
 > 说明:上述二进制由上游作者构建,本仓库未对其做逆向审计;仅保证来源可溯源(上游提交 + 哈希)并在 CI 中校验哈希清单(见 `ci/assets.sha256`)。
 
-## 已知风险与修复思路 (本次未改动, 需真机验证后再决定)
+## 已知风险与修复记录 (1 已在运行时修复, 其余待真机验证)
 
-1. **box64 的 ELF 解释器路径写死为上游包名** (CI 每次构建都会在 `healthcheck.sh apk` 里告警): 上游 `box64` 的
-   `PT_INTERP` / `RUNPATH` 是 `/data/data/com.winlator/files/rootfs/lib/...`, 而本应用包名是 `com.winlator.cn`,
-   应用又是直接 `exec` box64 (无显式加载器)。内核解析 `PT_INTERP` 时会找不到解释器, 导致无法启动。rootfs 内的
-   `fonts.conf`、`ld.so.cache`、`alsa.conf` 以及许多库里也写死了同样的前缀。可选方案:
-   (a) CI 里用 patchelf 改写 aarch64 可执行文件的解释器与 rpath, 并改写 rootfs 内的文本配置;
-   (b) 重新构建针对 `com.winlator.cn` 前缀的 rootfs / box64;
-   (c) 改用与原包名等长的 applicationId, 便于直接二进制替换。
-   注意: 直接改成 `ld-linux-aarch64.so.1 box64` 的显式加载器方式会使 `/proc/self/exe` 指向加载器, box64
-   依赖它定位自身, 未经验证不要采用。
+1. **【已修复】box64 的 ELF 解释器路径写死为上游包名**: 上游 `box64` 的 `PT_INTERP` / `RUNPATH` 是
+   `/data/data/com.winlator/files/rootfs/lib/...`, 而本应用包名是 `com.winlator.cn`, 应用又是直接 `exec` box64
+   (无显式加载器)。内核解析 `PT_INTERP` 时找不到解释器, `exec` 直接 ENOENT(表现为
+   `box64: cannot execute: required file not found`), Wine 永远不会被拉起来, 界面就一直停在"正在启动…"
+   (`PreloaderDialog` 只在 Wine map 出窗口后才关闭)。这是容器打不开(issue #2)的根因。
+   修复方式见 `core/NativeExecFixer.java`: 每次启动容器前把 rootfs 内会被直接 exec 的 aarch64 程序
+   (box64、locale、localedef、getconf)的 `PT_INTERP` **原地**改写成 `<files>/rootfs/lib/ld.so`
+   (指向 rootfs 的 `ld-linux-aarch64.so.1`)。只覆盖 `.interp` 段内的字符串并补 NUL, 段长不变, 不移动文件
+   其它偏移, 幂等且对已解包的 rootfs 立即生效(用户无需重装)。`RUNPATH` 未改动: 应用已设置
+   `LD_LIBRARY_PATH=<rootfs>/usr/lib`, 动态加载器优先查它, 不影响库加载。
+   之所以用 `ld.so` 别名: 完整路径 `<files>/rootfs/lib/ld-linux-aarch64.so.1` 长 64 字节, 比上游预留的
+   `.interp` 段(63 字节)正好长 2 字节, 放不进去; 别名只要路径足够短即可(已按 `.interp` 段长度自动挑选)。
+   注意: 直接改成 `ld-linux-aarch64.so.1 box64` 的显式加载器方式不可取 —— `/proc/self/exe` 会指向加载器,
+   而 box64 依赖它定位自身。
+   rootfs 内 `fonts.conf`(字体目录)、`usr/share/alsa/alsa.conf`、`pulse/client.conf` 也写死同样的前缀,
+   同样由 `NativeExecFixer` 按实际路径改写(不改会让 CI 注入的 Noto CJK 扫不到, 中文显示回退成方块);
+   `etc/ld.so.cache` 是二进制缓存、未改写, 但 `LD_LIBRARY_PATH` 的查找顺序在缓存之前, 不影响库加载。
 2. **APK 用 debug 证书签名**: 每台 CI runner 的 debug 密钥不同, 不同构建之间无法覆盖安装, 也不可上架。
    请在仓库 secrets 中配置固定 keystore (`KEYSTORE_B64` / `KEYSTORE_PASSWORD` / `KEY_ALIAS` / `KEY_PASSWORD`),
    工作流已支持。

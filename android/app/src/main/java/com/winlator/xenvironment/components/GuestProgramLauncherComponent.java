@@ -3,17 +3,21 @@ package com.winlator.xenvironment.components;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Process;
+import android.util.Log;
 
 import androidx.preference.PreferenceManager;
 
+import com.winlator.R;
 import com.winlator.box64.Box64Preset;
 import com.winlator.box64.Box64PresetManager;
+import com.winlator.core.AppUtils;
 import com.winlator.core.Callback;
 import com.winlator.core.DefaultVersion;
 import com.winlator.core.EnvVars;
 import com.winlator.core.FileUtils;
 import com.winlator.core.GeneralComponents;
 import com.winlator.core.LocaleHelper;
+import com.winlator.core.NativeExecFixer;
 import com.winlator.core.ProcessHelper;
 import com.winlator.widget.LogView;
 import com.winlator.xconnector.UnixSocketConfig;
@@ -24,6 +28,7 @@ import java.io.File;
 import java.util.List;
 
 public class GuestProgramLauncherComponent extends EnvironmentComponent {
+    private static final String TAG = "WinlatorCN";
     private String guestExecutable;
     private static int pid = -1;
     private EnvVars envVars;
@@ -37,7 +42,15 @@ public class GuestProgramLauncherComponent extends EnvironmentComponent {
             stop();
             extractBox64File();
             copyDefaultBox64RCFile();
+            NativeExecFixer.fix(environment.getContext());
             pid = execGuestProgram();
+
+            if (pid == -1) {
+                // exec 失败时不要静默停在"正在启动…"：提示用户并收尾，否则界面会一直卡在启动遮罩上，
+                // 用户完全看不出是 box64 起不来（上游这里把异常吞掉了）。
+                AppUtils.showToast(environment.getContext(), R.string.failed_to_start_wine);
+                if (terminationCallback != null) terminationCallback.call(-1);
+            }
         }
     }
 
@@ -107,12 +120,15 @@ public class GuestProgramLauncherComponent extends EnvironmentComponent {
 
         String command = rootDir+"/usr/local/bin/box64 "+guestExecutable;
 
-        return ProcessHelper.exec(command, envVars, rootDir, (status) -> {
+        int newPid = ProcessHelper.exec(command, envVars, rootDir, (status) -> {
             synchronized (lock) {
                 pid = -1;
             }
             if (terminationCallback != null) terminationCallback.call(status);
         });
+
+        if (newPid == -1) Log.e(TAG, "启动客户程序失败（exec 返回 -1）: "+command);
+        return newPid;
     }
 
     private void extractBox64File() {
