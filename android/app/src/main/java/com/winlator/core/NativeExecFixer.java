@@ -27,6 +27,11 @@ import java.nio.charset.StandardCharsets;
  *
  * <p>RUNPATH 同样是上游前缀，但应用已经设置了 {@code LD_LIBRARY_PATH=<rootfs>/usr/lib}，
  * 动态加载器会优先查 {@code LD_LIBRARY_PATH}，所以不影响加载，这里不动它。
+ *
+ * <p>另外 rootfs 里有几个文本配置也写死了上游前缀，一并按本包名的实际路径改写（幂等）：
+ * {@code /etc/fonts/fonts.conf}（字体目录，不改会让内置 Noto CJK 扫不到）、
+ * {@code /usr/share/alsa/alsa.conf}、{@code /etc/pulse/client.conf}。
+ * {@code /etc/ld.so.cache} 是二进制缓存，不改写：{@code LD_LIBRARY_PATH} 的查找顺序在缓存之前。
  */
 public abstract class NativeExecFixer {
     private static final String TAG = "WinlatorCN";
@@ -47,6 +52,16 @@ public abstract class NativeExecFixer {
         "/usr/lib/getconf/XBS5_LP64_OFF64"
     };
 
+    /** rootfs 内写死了上游前缀、需要按本包名实际路径改写的文本配置（相对 rootfs 根目录） */
+    private static final String[] TEXT_CONFIGS = {
+        "/etc/fonts/fonts.conf",
+        "/usr/share/alsa/alsa.conf",
+        "/etc/pulse/client.conf"
+    };
+
+    /** 文本配置里出现的上游 rootfs 绝对路径 */
+    private static final String UPSTREAM_ROOTFS_PREFIX = UPSTREAM_PREFIX + "files/rootfs";
+
     /**
      * 修复 rootfs 里所有带上游前缀的原生可执行文件。rootfs 还没解包时直接返回，
      * 重复调用是安全的（已经是正确路径的文件会被跳过）。
@@ -54,6 +69,8 @@ public abstract class NativeExecFixer {
     public static void fix(Context context) {
         RootFS rootFS = RootFS.find(context);
         File rootDir = rootFS.getRootDir();
+        fixTextConfigs(rootDir);
+
         File loaderFile = new File(rootDir, "/lib/" + LOADER_FILE_NAME);
         if (!loaderFile.isFile()) return;
 
@@ -110,5 +127,27 @@ public abstract class NativeExecFixer {
         if (!FileUtils.copy(loaderFile, aliasFile)) return false;
         FileUtils.chmod(aliasFile, 0755);
         return aliasFile.isFile();
+    }
+
+    /**
+     * 把 rootfs 里几个写死上游前缀的文本配置改写成实际路径。已经是正确路径时不做任何事。
+     */
+    private static void fixTextConfigs(File rootDir) {
+        String actualPath = rootDir.getPath();
+
+        for (String relativePath : TEXT_CONFIGS) {
+            File configFile = new File(rootDir, relativePath);
+            if (!configFile.isFile()) continue;
+
+            String content = FileUtils.readString(configFile);
+            if (content == null || !content.contains(UPSTREAM_ROOTFS_PREFIX)) continue;
+
+            if (FileUtils.writeString(configFile, content.replace(UPSTREAM_ROOTFS_PREFIX, actualPath))) {
+                Log.i(TAG, "已改写 " + relativePath + " 里的上游路径前缀 -> " + actualPath);
+            }
+            else {
+                Log.w(TAG, "改写 " + relativePath + " 失败");
+            }
+        }
     }
 }

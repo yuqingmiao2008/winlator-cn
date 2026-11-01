@@ -332,19 +332,20 @@ check_apk() { # <apk> [applicationId]
         fi
     fi
 
-    # 已知风险 (需要真机验证, 因此只告警): 上游 box64 的 PT_INTERP 写死 com.winlator 包名下的路径
+    # 上游 box64 的 PT_INTERP 写死 com.winlator 包名下的路径。应用在启动容器前由
+    # core/NativeExecFixer 原地改写到本包名的短路径(<files>/rootfs/lib/ld.so), 因此这里只做提示;
+    # 若该修复被移除, 容器会卡在"正在启动"。
     local b64 tmpd; b64="$(grep '^assets/box64/box64-.*\.tzst$' <<<"$entries" | sort -V | tail -1)"
     if [ -n "$b64" ] && command -v readelf >/dev/null 2>&1 && command -v zstd >/dev/null 2>&1; then
         tmpd="$(mktemp -d)"
         unzip -p "$APK" "$b64" | zstd -dc | tar -xf - -C "$tmpd" 2>/dev/null
-        local bin interp want
+        local bin interp
         bin="$(find "$tmpd" -type f -name box64 | head -1)"
         interp="$(readelf -l "$bin" 2>/dev/null | sed -n 's/.*Requesting program interpreter: \(.*\)\]/\1/p')"
-        want="/data/data/$APPID/files/rootfs/lib/ld-linux-aarch64.so.1"
-        if [ -n "$interp" ] && [ "$interp" != "$want" ]; then
-            warn "$(basename "$b64") 的 ELF 解释器写死为 '$interp', 而本应用包名 $APPID 的 rootfs 在 '$want': 内核 exec box64 时会因找不到解释器而失败。需在真机验证; 修复思路见 UPSTREAM.md"
+        if [ -n "$interp" ] && grep -q '^/data/data/com\.winlator/' <<<"$interp"; then
+            ok "$(basename "$b64") 的 ELF 解释器写死上游包名 '$interp'，运行时由 core/NativeExecFixer 改写为 <files>/rootfs/lib/ld.so（预期行为）"
         else
-            ok "box64 ELF 解释器路径与包名一致"
+            ok "box64 ELF 解释器路径为 '$interp'"
         fi
         rm -rf "$tmpd"
     fi

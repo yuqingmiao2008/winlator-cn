@@ -88,8 +88,9 @@
    `.interp` 段(63 字节)正好长 2 字节, 放不进去; 别名只要路径足够短即可(已按 `.interp` 段长度自动挑选)。
    注意: 直接改成 `ld-linux-aarch64.so.1 box64` 的显式加载器方式不可取 —— `/proc/self/exe` 会指向加载器,
    而 box64 依赖它定位自身。
-   rootfs 内的 `fonts.conf`、`ld.so.cache`、`alsa.conf` 仍写死同样的前缀, 但都在 `LD_LIBRARY_PATH` /
-   应用自身配置覆盖范围内, 目前不影响启动。
+   rootfs 内 `fonts.conf`(字体目录)、`usr/share/alsa/alsa.conf`、`pulse/client.conf` 也写死同样的前缀,
+   同样由 `NativeExecFixer` 按实际路径改写(不改会让 CI 注入的 Noto CJK 扫不到, 中文显示回退成方块);
+   `etc/ld.so.cache` 是二进制缓存、未改写, 但 `LD_LIBRARY_PATH` 的查找顺序在缓存之前, 不影响库加载。
 2. **APK 用 debug 证书签名**: 每台 CI runner 的 debug 密钥不同, 不同构建之间无法覆盖安装, 也不可上架。
    请在仓库 secrets 中配置固定 keystore (`KEYSTORE_B64` / `KEYSTORE_PASSWORD` / `KEY_ALIAS` / `KEY_PASSWORD`),
    工作流已支持。
