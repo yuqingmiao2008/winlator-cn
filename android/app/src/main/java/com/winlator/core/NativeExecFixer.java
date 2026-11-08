@@ -142,8 +142,8 @@ public abstract class NativeExecFixer {
 
     private static final String COMCTL32_MARKER = "BUTTON_WindowProc";
     private static final String[] COMCTL32_ARCH_DIRS = {
-        "/lib/wine/x86_64-windows",
-        "/lib/wine/i386-windows"
+        "/opt/wine/lib/wine/x86_64-windows",
+        "/opt/wine/lib/wine/i386-windows"
     };
 
     /**
