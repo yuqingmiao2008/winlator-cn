@@ -12,6 +12,7 @@ import com.winlator.xserver.extensions.GLXExtension;
 import com.winlator.xserver.extensions.GenericEventExtension;
 import com.winlator.xserver.extensions.MITSHMExtension;
 import com.winlator.xserver.extensions.PresentExtension;
+import com.winlator.xserver.extensions.ShapeExtension;
 import com.winlator.xserver.extensions.SyncExtension;
 import com.winlator.xserver.extensions.XComposite;
 import com.winlator.xserver.extensions.XInputExtension;
@@ -203,6 +204,7 @@ public class XServer {
             new DRI3Extension(this, opcode--),
             new PresentExtension(this, opcode--),
             new SyncExtension(this, opcode--),
+            new ShapeExtension(this, opcode--),
             new XComposite(this, opcode--),
             new GLXExtension(this, opcode--),
             new GenericEventExtension(this, opcode--),

@@ -62,6 +62,84 @@ public abstract class NativeExecFixer {
     /** 文本配置里出现的上游 rootfs 绝对路径 */
     private static final String UPSTREAM_ROOTFS_PREFIX = UPSTREAM_PREFIX + "files/rootfs";
 
+    /** 上游 libxcb 编译进 .rodata 的 X11 socket 路径（长度固定 52 字节，含结尾 X） */
+    private static final String X11_SOCKET_TEMPLATE = "/data/data/com.winlator/files/rootfs/tmp/.X11-unix/X";
+    private static final byte[] X11_SOCKET_TEMPLATE_BYTES = X11_SOCKET_TEMPLATE.getBytes(StandardCharsets.UTF_8);
+
+    /**
+     * 修复 libxcb 里写死的 X11 socket 路径。
+     *
+     * <p>Wine 的 winex11 通过 libxcb 连接 X server，而 libxcb 的 socket 路径是编译期写死的
+     * {@code /data/data/com.winlator/files/rootfs/tmp/.X11-unix/X}。本应用包名不同，wine 连不上
+     * 自己的 X server（{@code XOpenDisplay} 失败），winex11 退化成 nulldrv，表现为
+     * {@code nodrv_CreateWindow}、卡在"正在启动…"或容器直接退出。
+     *
+     * <p>这里把该字符串原地改写成更短的 {@code <data>/tmp/.X11-unix/X}（长度不超过原来的 52 字节，
+     * 多余字节补 NUL），并建立 {@code <data>/tmp -> <files>/rootfs/tmp} 软链接。软链接必须由应用自己
+     * 创建，SELinux 才会带上本应用的类型与 category（用 root 建出来的是 s0，访问会 EACCES）。
+     */
+    private static void fixX11SocketPath(Context context, File rootDir) {
+        File libxcb = new File(rootDir, "/usr/lib/libxcb.so.1.1.0");
+        if (!libxcb.isFile()) return;
+
+        String dataDir = context.getApplicationInfo().dataDir;
+        byte[] replacement = (dataDir + "/tmp/.X11-unix/X").getBytes(StandardCharsets.UTF_8);
+        if (replacement.length > X11_SOCKET_TEMPLATE_BYTES.length) return;
+
+        patchFixedString(libxcb, X11_SOCKET_TEMPLATE_BYTES, replacement);
+        ensureTempAlias(new File(dataDir, "tmp"), new File(rootDir, "tmp"));
+    }
+
+    /** 原地替换文件中定长的字符串，替换串较短时用 NUL 补齐（幂等） */
+    private static void patchFixedString(File file, byte[] target, byte[] replacement) {
+        try {
+            byte[] content = FileUtils.read(file);
+            if (content == null) return;
+
+            int index = indexOf(content, target);
+            if (index == -1) return;
+
+            byte[] patched = content.clone();
+            System.arraycopy(replacement, 0, patched, index, replacement.length);
+            for (int i = replacement.length; i < target.length; i++) patched[index + i] = 0;
+
+            if (FileUtils.write(file, patched)) {
+                Log.i(TAG, "已修正 " + file.getName() + " 里的 X11 socket 路径: " + new String(replacement, StandardCharsets.UTF_8));
+            }
+        }
+        catch (Exception e) {
+            Log.w(TAG, "修正 " + file.getName() + " 的 X11 socket 路径失败: " + e);
+        }
+    }
+
+    private static int indexOf(byte[] data, byte[] needle) {
+        outer:
+        for (int i = 0; i <= data.length - needle.length; i++) {
+            for (int j = 0; j < needle.length; j++) {
+                if (data[i + j] != needle[j]) continue outer;
+            }
+            return i;
+        }
+        return -1;
+    }
+
+    /** 建立 {@code <data>/tmp -> <files>/rootfs/tmp} 软链接（已存在则跳过） */
+    private static void ensureTempAlias(File linkFile, File targetDir) {
+        try {
+            if (linkFile.exists() || FileUtils.isSymlink(linkFile)) {
+                File canonicalTarget = targetDir.getCanonicalFile();
+                File canonicalLink = linkFile.getCanonicalFile();
+                if (canonicalTarget.equals(canonicalLink)) return;
+                linkFile.delete();
+            }
+            FileUtils.symlink(targetDir.getPath(), linkFile.getPath());
+            Log.i(TAG, "已建立 X11 socket 别名: " + linkFile + " -> " + targetDir);
+        }
+        catch (Exception e) {
+            Log.w(TAG, "建立 X11 socket 别名失败: " + e);
+        }
+    }
+
     /**
      * 修复 rootfs 里所有带上游前缀的原生可执行文件。rootfs 还没解包时直接返回，
      * 重复调用是安全的（已经是正确路径的文件会被跳过）。
@@ -70,6 +148,7 @@ public abstract class NativeExecFixer {
         RootFS rootFS = RootFS.find(context);
         File rootDir = rootFS.getRootDir();
         fixTextConfigs(rootDir);
+        fixX11SocketPath(context, rootDir);
 
         File loaderFile = new File(rootDir, "/lib/" + LOADER_FILE_NAME);
         if (!loaderFile.isFile()) return;
