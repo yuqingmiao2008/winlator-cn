@@ -140,6 +140,43 @@ public abstract class NativeExecFixer {
         }
     }
 
+    private static final String COMCTL32_MARKER = "BUTTON_WindowProc";
+    private static final String[] COMCTL32_ARCH_DIRS = {
+        "/lib/wine/x86_64-windows",
+        "/lib/wine/i386-windows"
+    };
+
+    /**
+     * Wine 11 把 comctl32 拆成了 {@code comctl32.dll}（v5）和 {@code comctl32_v6.dll}（v6）。
+     * 本应用构建出来的 rootfs 里 v6 那份没有被 manifest 激活，wfm.exe 创建
+     * {@code 6.0.2600.2982!Button} 时会失败，任务栏的 Start/Computer 按钮就画不出来。
+     *
+     * <p>v6 那份包含完整的标准控件实现（含 {@code BUTTON_WindowProc}），这里直接用它覆盖
+     * 主 DLL，让版本化类可以被解析。幂等：主 DLL 已含标记时跳过。
+     */
+    private static void fixComctl32(File rootDir) {
+        byte[] marker = COMCTL32_MARKER.getBytes(StandardCharsets.US_ASCII);
+
+        for (String relativeDir : COMCTL32_ARCH_DIRS) {
+            File main = new File(rootDir, relativeDir + "/comctl32.dll");
+            File v6 = new File(rootDir, relativeDir + "/comctl32_v6.dll");
+            if (!main.isFile() || !v6.isFile()) continue;
+
+            byte[] mainData = FileUtils.read(main);
+            if (mainData == null || indexOf(mainData, marker) != -1) continue;
+
+            byte[] v6Data = FileUtils.read(v6);
+            if (v6Data == null || indexOf(v6Data, marker) == -1) continue;
+
+            if (FileUtils.write(main, v6Data)) {
+                Log.i(TAG, "已启用 comctl32 v6: " + relativeDir);
+            }
+            else {
+                Log.w(TAG, "启用 comctl32 v6 失败: " + relativeDir);
+            }
+        }
+    }
+
     /**
      * 修复 rootfs 里所有带上游前缀的原生可执行文件。rootfs 还没解包时直接返回，
      * 重复调用是安全的（已经是正确路径的文件会被跳过）。
@@ -149,6 +186,7 @@ public abstract class NativeExecFixer {
         File rootDir = rootFS.getRootDir();
         fixTextConfigs(rootDir);
         fixX11SocketPath(context, rootDir);
+        fixComctl32(rootDir);
 
         File loaderFile = new File(rootDir, "/lib/" + LOADER_FILE_NAME);
         if (!loaderFile.isFile()) return;
